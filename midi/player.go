@@ -198,7 +198,9 @@ type Channel int8
 
 type Parameter int8
 
-type Preset map[Parameter]int8
+type Value int8
+
+type Preset map[Parameter]Value
 
 type Player struct {
 	drv midi.Driver
@@ -246,7 +248,7 @@ func NewPlayer(name string) (*Player, error) {
 	return p, nil
 }
 
-func (play *Player) Play(c Channel, n, v int8, d float64) {
+func (play *Player) Play(c Channel, n Note, v Value, d float64) {
 	play.wr.SetChannel(uint8(c))
 	writer.NoteOn(play.wr, uint8(n), uint8(v))
 	go func() {
@@ -262,12 +264,12 @@ func (play *Player) Preset(c Channel, p Preset) {
 	}
 }
 
-func (play *Player) CC(p Parameter, c Channel, v int8) {
+func (play *Player) CC(p Parameter, c Channel, v Value) {
 	play.wr.SetChannel(uint8(c))
 	writer.ControlChange(play.wr, uint8(p), uint8(v))
 }
 
-func (play *Player) PC(c Channel, v int8) {
+func (play *Player) PC(c Channel, v Value) {
 	play.wr.SetChannel(uint8(c))
 	writer.ProgramChange(play.wr, uint8(v))
 }
