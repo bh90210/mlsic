@@ -200,6 +200,8 @@ type Parameter int8
 
 type Value int8
 
+type Duration float64
+
 type Preset map[Parameter]Value
 
 type Player struct {
@@ -248,9 +250,10 @@ func NewPlayer(name string) (*Player, error) {
 	return p, nil
 }
 
-func (play *Player) Play(c Channel, n Note, v Value, d float64) {
+func (play *Player) Play(c Channel, n Note, v Value, d Duration) {
 	play.wr.SetChannel(uint8(c))
 	writer.NoteOn(play.wr, uint8(n), uint8(v))
+
 	go func() {
 		time.Sleep(time.Millisecond * time.Duration(d))
 		play.wr.SetChannel(uint8(c))
