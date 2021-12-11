@@ -10,19 +10,15 @@ const (
 	SAMPLES model = "Model:Samples"
 )
 
-type voice midi.Channel
-
 // Voices/Tracks
 const (
-	T1 voice = iota
+	T1 midi.Channel = iota
 	T2
 	T3
 	T4
 	T5
 	T6
 )
-
-type chords midi.Parameter
 
 // Chords
 const (
@@ -120,7 +116,7 @@ const (
 
 // Machines
 const (
-	KICK midi.Parameter = iota
+	KICK midi.Value = iota
 	SNARE
 	METAL
 	PERC
@@ -130,75 +126,75 @@ const (
 
 func PT1() midi.Preset {
 	p := make(map[midi.Parameter]midi.Value)
-	p[MACHINE] = midi.Value(KICK)
-	p[TRACKLEVEL] = midi.Value(120)
-	p[MUTE] = midi.Value(0)
-	p[PAN] = midi.Value(63)
-	p[SWEEP] = midi.Value(16)
-	p[CONTOUR] = midi.Value(24)
-	p[DELAY] = midi.Value(0)
-	p[REVERB] = midi.Value(0)
-	p[VOLUMEDIST] = midi.Value(60)
-	p[CYCLESPITCH] = midi.Value(64)
-	p[DECAY] = midi.Value(29)
-	p[COLOR] = midi.Value(10)
-	p[SHAPE] = midi.Value(16)
-	p[PUNCH] = midi.Value(0)
-	p[GATE] = midi.Value(0)
+	p[MACHINE] = KICK
+	p[TRACKLEVEL] = 120
+	p[MUTE] = 0
+	p[PAN] = 63
+	p[SWEEP] = 16
+	p[CONTOUR] = 24
+	p[DELAY] = 0
+	p[REVERB] = 0
+	p[VOLUMEDIST] = 60
+	p[CYCLESPITCH] = 64
+	p[DECAY] = 29
+	p[COLOR] = 10
+	p[SHAPE] = 16
+	p[PUNCH] = 0
+	p[GATE] = 0
 	return p
 }
 
 func PT2() midi.Preset {
 	p := PT1()
-	p[MACHINE] = midi.Value(SNARE)
-	p[SWEEP] = midi.Value(8)
-	p[CONTOUR] = midi.Value(0)
-	p[DECAY] = midi.Value(40)
-	p[COLOR] = midi.Value(0)
-	p[SHAPE] = midi.Value(127)
+	p[MACHINE] = SNARE
+	p[SWEEP] = 8
+	p[CONTOUR] = 0
+	p[DECAY] = 40
+	p[COLOR] = 0
+	p[SHAPE] = 127
 	return p
 }
 
 func PT3() midi.Preset {
 	p := PT1()
-	p[MACHINE] = midi.Value(METAL)
-	p[SWEEP] = midi.Value(48)
-	p[CONTOUR] = midi.Value(0)
-	p[DECAY] = midi.Value(20)
-	p[COLOR] = midi.Value(16)
-	p[SHAPE] = midi.Value(46)
+	p[MACHINE] = METAL
+	p[SWEEP] = 48
+	p[CONTOUR] = 0
+	p[DECAY] = 20
+	p[COLOR] = 16
+	p[SHAPE] = 46
 	return p
 }
 
 func PT4() midi.Preset {
 	p := PT1()
-	p[MACHINE] = midi.Value(PERC)
-	p[SWEEP] = midi.Value(100)
-	p[CONTOUR] = midi.Value(64)
-	p[DECAY] = midi.Value(26)
-	p[COLOR] = midi.Value(15)
-	p[SHAPE] = midi.Value(38)
+	p[MACHINE] = PERC
+	p[SWEEP] = 100
+	p[CONTOUR] = 64
+	p[DECAY] = 26
+	p[COLOR] = 15
+	p[SHAPE] = 38
 	return p
 }
 
 func PT5() midi.Preset {
 	p := PT1()
-	p[MACHINE] = midi.Value(TONE)
-	p[SWEEP] = midi.Value(38)
-	p[CONTOUR] = midi.Value(52)
-	p[DECAY] = midi.Value(42)
-	p[COLOR] = midi.Value(22)
-	p[SHAPE] = midi.Value(40)
+	p[MACHINE] = TONE
+	p[SWEEP] = 38
+	p[CONTOUR] = 52
+	p[DECAY] = 42
+	p[COLOR] = 22
+	p[SHAPE] = 40
 	return p
 }
 
 func PT6() midi.Preset {
 	p := PT1()
-	p[MACHINE] = midi.Value(CHORD)
-	p[SWEEP] = midi.Value(43)
-	p[CONTOUR] = midi.Value(24)
-	p[DECAY] = midi.Value(64)
-	p[COLOR] = midi.Value(20)
-	p[SHAPE] = midi.Value(4)
+	p[MACHINE] = CHORD
+	p[SWEEP] = 43
+	p[CONTOUR] = 24
+	p[DECAY] = 64
+	p[COLOR] = 20
+	p[SHAPE] = 4
 	return p
 }
