@@ -204,6 +204,8 @@ type Duration float64
 
 type Preset map[Parameter]Value
 
+type Synth string
+
 type Player struct {
 	drv midi.Driver
 	in  midi.In
@@ -211,7 +213,7 @@ type Player struct {
 	wr  *writer.Writer
 }
 
-func NewPlayer(name string) (*Player, error) {
+func NewPlayer(device Synth) (*Player, error) {
 	drv, err := driver.New()
 	if err != nil {
 		return nil, err
@@ -223,13 +225,13 @@ func NewPlayer(name string) (*Player, error) {
 
 	ins, _ := drv.Ins()
 	for _, in := range ins {
-		if strings.Contains(in.String(), name) {
+		if strings.Contains(in.String(), string(device)) {
 			p.in = in
 		}
 	}
 	outs, _ := drv.Outs()
 	for _, out := range outs {
-		if strings.Contains(out.String(), name) {
+		if strings.Contains(out.String(), string(device)) {
 			p.out = out
 		}
 	}

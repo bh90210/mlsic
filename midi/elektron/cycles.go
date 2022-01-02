@@ -2,12 +2,10 @@ package elektron
 
 import "github.com/bh90210/mlsic/midi"
 
-type model string
-
 // Model
 const (
-	CYCLES  model = "Model:Cycles"
-	SAMPLES model = "Model:Samples"
+	CYCLES  midi.Synth = "Model:Cycles"
+	SAMPLES midi.Synth = "Model:Samples"
 )
 
 // Voices/Tracks
@@ -64,7 +62,7 @@ const (
 
 const (
 	// NOTE       Parameter = 3
-	TRACKLEVEL midi.Parameter = 17
+	TRACKLEVEL midi.Parameter = 95
 	MUTE       midi.Parameter = 94
 	PAN        midi.Parameter = 10
 	SWEEP      midi.Parameter = 18
