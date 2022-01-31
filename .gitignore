@@ -15,3 +15,5 @@
 # vendor/
 
 notes.md
+*.wav
+*.scd

@@ -200,8 +200,6 @@ type Parameter int8
 
 type Value int8
 
-type Duration float64
-
 type Preset map[Parameter]Value
 
 type Synth string
@@ -252,15 +250,15 @@ func NewPlayer(device Synth) (*Player, error) {
 	return p, nil
 }
 
-func (play *Player) Play(c Channel, n Note, v Value, d Duration) {
+func (play *Player) Play(c Channel, n Note, v Value, d float64) {
 	play.wr.SetChannel(uint8(c))
 	writer.NoteOn(play.wr, uint8(n), uint8(v))
 
-	go func() {
+	go func(c Channel, n Note, d float64) {
 		time.Sleep(time.Millisecond * time.Duration(d))
 		play.wr.SetChannel(uint8(c))
 		writer.NoteOff(play.wr, uint8(n))
-	}()
+	}(c, n, d)
 }
 
 func (play *Player) Preset(c Channel, p Preset) {
