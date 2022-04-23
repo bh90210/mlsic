@@ -1,3 +1,6 @@
+// Package infinity
+//
+// http://oeis.org/A004718
 package infinity
 
 import "github.com/bh90210/mlsic/graph"
@@ -5,7 +8,7 @@ import "github.com/bh90210/mlsic/graph"
 func Series(n, offset int) []int {
 	var s []int
 	n = n * 2
-	for i := 0; i <= n; i++ {
+	for i := 0; i <= (n + 1); i++ {
 		switch {
 		case i == 0:
 			s = append(s, offset)

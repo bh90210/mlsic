@@ -1,1 +1,0 @@
-http://oeis.org/A004718

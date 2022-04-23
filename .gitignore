@@ -17,3 +17,6 @@
 notes.md
 *.wav
 *.scd
+
+go.work
+go.work.sum

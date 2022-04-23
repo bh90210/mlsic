@@ -72,3 +72,7 @@ func (f *wavfile) Close() {
 		c.Close()
 	}
 }
+
+func Normilazion(val, min, max float64) float64 {
+	return (val - min) * (max - min)
+}
