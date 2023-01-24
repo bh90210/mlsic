@@ -24,9 +24,12 @@ var _ mlsic.Graph = (*Prime1)(nil)
 
 // Prime1 implements mlsic.VGAE.
 type Prime1 struct {
+	// TotalGraphs total numbers of graphs to be generated.
 	TotalGraphs int
-	Print       bool
-	Seed        int64
+	// Print if true renders all graphs generated as .dot and subsequently .svg files.
+	Print bool
+	// Seed of the rand.Seed() function.
+	Seed int64
 }
 
 // Dump returns a deterministic sequences of graphs for dev purposes.

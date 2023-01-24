@@ -22,9 +22,12 @@ var _ mlsic.Graph = (*Det)(nil)
 
 // Det implements mlsic.VGAE.
 type Det struct {
+	// TotalGraphs total numbers of graphs to be generated.
 	TotalGraphs int
-	Print       bool
-	Seed        int64
+	// Print if true renders all graphs generated as .dot and subsequently .svg files.
+	Print bool
+	// Seed of the rand.Seed() function.
+	Seed int64
 }
 
 // Dump returns a deterministic sequence of graphs for dev purposes.
