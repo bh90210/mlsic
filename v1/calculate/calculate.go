@@ -26,14 +26,19 @@ type SineOptions struct {
 // SineGeneration generates a sine wave according to the parameters provided.
 // It returns an audio.PCMBuffer loaded with the generated sine wave as 32bit floating point slice []F32.
 // The math package used to calculate the sine wave is github.com/chewxy/math32.
-func SineGeneration(format *audio.Format, opts SineOptions) audio.PCMBuffer {
-	var phase float32
-	var step = opts.Freq / float32(format.SampleRate)
-	var signal = audio.PCMBuffer{
-		Format: format,
+// If f is nil it returns an empty audio.PCMbuffer{}.
+func SineGeneration(f *audio.Format, opts SineOptions) audio.PCMBuffer {
+	if f == nil {
+		return audio.PCMBuffer{}
 	}
 
-	attackInSamples := int(opts.A / (1000 / float64(format.SampleRate)))
+	var phase float32
+	var step = opts.Freq / float32(f.SampleRate)
+	var signal = audio.PCMBuffer{
+		Format: f,
+	}
+
+	attackInSamples := int(opts.A / (1000 / float64(f.SampleRate)))
 	for i := 0; i < attackInSamples; i++ {
 		sample := math32.Sin(2 * math32.Pi * phase)
 
@@ -44,7 +49,7 @@ func SineGeneration(format *audio.Format, opts SineOptions) audio.PCMBuffer {
 		_, phase = math32.Modf(phase + step)
 	}
 
-	decayInSamples := int(opts.D / (1000 / float64(format.SampleRate)))
+	decayInSamples := int(opts.D / (1000 / float64(f.SampleRate)))
 	for i := 0; i < decayInSamples; i++ {
 		sample := math32.Sin(2 * math32.Pi * phase)
 
@@ -55,7 +60,7 @@ func SineGeneration(format *audio.Format, opts SineOptions) audio.PCMBuffer {
 		_, phase = math32.Modf(phase + step)
 	}
 
-	releaseInSamples := int(opts.R / (1000 / float64(format.SampleRate)))
+	releaseInSamples := int(opts.R / (1000 / float64(f.SampleRate)))
 	for i := releaseInSamples; i > 0; i-- {
 		sample := math32.Sin(2 * math32.Pi * phase)
 

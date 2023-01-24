@@ -3,9 +3,8 @@
 package render
 
 import (
+	"fmt"
 	"os"
-	"strconv"
-	"time"
 
 	"github.com/bh90210/mlsic/v1"
 	"github.com/go-audio/audio"
@@ -24,16 +23,14 @@ type Wav struct {
 }
 
 // Render accepts a slice of audio.PCMBuffer and creates out of each one of them a mono
-// .wav file named 2023-01-24 06:43:08.69777983 +0100 CET m=+30.592648798_0.wav.
+// .wav file named /path/to/file/0.wav for the first channel, /path/to/file/1.wav for the second etc.
 func (w *Wav) Render(pcmBuffer []*audio.PCMBuffer) error {
 	for i, buf := range pcmBuffer {
-		f, err := os.Create(w.Filepath + "/" + time.Now().String() + "_" + strconv.Itoa(i) + ".wav")
+		f, err := os.Create(fmt.Sprintf("%s/%v.wav", w.Filepath, i))
 		if err != nil {
 			return err
 		}
 
-		format := pcmBuffer[0].Format
-		wave := wav.NewEncoder(f, format.SampleRate, 32, 1, 1)
 		f32 := buf.AsFloat32Buffer()
 
 		err = transforms.PCMScaleF32(f32, 32)
@@ -42,6 +39,9 @@ func (w *Wav) Render(pcmBuffer []*audio.PCMBuffer) error {
 		}
 
 		i32 := f32.AsIntBuffer()
+
+		format := pcmBuffer[0].Format
+		wave := wav.NewEncoder(f, format.SampleRate, 32, 1, 1)
 
 		wave.Metadata = w.Meta
 

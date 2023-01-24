@@ -34,14 +34,18 @@ type NetworkOption int
 // It is used to hold the min/max range of the various calculations done to graphs
 // as it is needed when we need to scale things (see calculate.LinearScale().)
 type MinMax struct {
+	// Min is the minimum value found in a network analysis.
 	Min float64
+	// Max is the maximum value found in a network analysis.
 	Max float64
 }
 
-// NetworkAnalysis
+// NetworkAnalysis holds all data to run a network analysis against a graph.
 type NetworkAnalysis struct {
+	// NodeValue is a map holding all maps that network analysis ran against.
 	NodeValue map[NetworkOption]map[int64]float64
-	MM        map[NetworkOption]MinMax
+	// MM is min/max values coming from network analysis of the graph.
+	MM map[NetworkOption]MinMax
 
 	graph       *simple.WeightedUndirectedGraph
 	allShortest path.AllShortest
@@ -50,7 +54,8 @@ type NetworkAnalysis struct {
 	mu sync.Mutex
 }
 
-// GraphNetwork .
+// GraphNetwork runs the provided network analysis opts, against the graph g.
+// If no options are provided all available analysis will run.
 func GraphNetwork(g *simple.WeightedUndirectedGraph, opts ...NetworkOption) *NetworkAnalysis {
 	ga := &NetworkAnalysis{
 		NodeValue: make(map[NetworkOption]map[int64]float64),

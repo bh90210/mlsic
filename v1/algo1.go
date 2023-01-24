@@ -139,7 +139,7 @@ func (a *Algo1) Run() error {
 				go func(e *event) {
 					defer eventWg.Done()
 
-					a.proccesEvent(e)
+					a.processEvent(e)
 
 					// Generate signal for event.
 					sine := calc.SineGeneration(a.Format, e.SineOptions)
@@ -237,7 +237,7 @@ func (a *Algo1) Run() error {
 	return nil
 }
 
-func (a *Algo1) proccesEvent(e *event) {
+func (a *Algo1) processEvent(e *event) {
 	// i := rand.Intn(5)
 	i := calc.Farness
 
