@@ -15,14 +15,16 @@ import (
 
 var _ mlsic.Renderer = (*Wav)(nil)
 
-// Wav .
+// Wav holds relevant information for encoding and saving .wav files out of audio.PCMBuffer.
 type Wav struct {
+	// Filepath `/path/to/directory` where the file should be saved.
 	Filepath string
-
+	// Meta holds .wav file metadata.
 	Meta *wav.Metadata
 }
 
-// Render .
+// Render accepts a slice of audio.PCMBuffer and creates out of each one of them a mono
+// .wav file named 2023-01-24 06:43:08.69777983 +0100 CET m=+30.592648798_0.wav.
 func (w *Wav) Render(pcmBuffer []*audio.PCMBuffer) error {
 	for i, buf := range pcmBuffer {
 		f, err := os.Create(w.Filepath + "/" + time.Now().String() + "_" + strconv.Itoa(i) + ".wav")
@@ -42,6 +44,7 @@ func (w *Wav) Render(pcmBuffer []*audio.PCMBuffer) error {
 		i32 := f32.AsIntBuffer()
 
 		wave.Metadata = w.Meta
+
 		err = wave.Write(i32)
 		if err != nil {
 			return err

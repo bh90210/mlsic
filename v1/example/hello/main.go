@@ -9,6 +9,7 @@ import (
 	"github.com/bh90210/mlsic/v1/generator"
 	"github.com/bh90210/mlsic/v1/pan"
 	"github.com/bh90210/mlsic/v1/render"
+	"github.com/go-audio/wav"
 )
 
 func main() {
@@ -30,7 +31,15 @@ func main() {
 		log.Fatal("specify filepath to save the .wav rendered file")
 	}
 
-	wave := &render.Wav{Filepath: filePath[0]}
+	wave := &render.Wav{
+		Filepath: filePath[0],
+		Meta: &wav.Metadata{
+			Engineer: "bh90210",
+			Software: "Mlsic",
+			Comments: "Computer music <3",
+		},
+	}
+
 	a1 := mlsic.NewAlgo1(g, r, mlsic.Algo1WithPan(p),
 		mlsic.Algo1WithAdditionalRenderer(wave), mlsic.Algo1WithLogging())
 

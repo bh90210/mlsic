@@ -88,8 +88,6 @@ func (p *PortAudio) Render(pcmBuffer []*audio.PCMBuffer) error {
 
 	defer stream.Stop()
 
-	// TODO: Log length, channels, sample/bitrate.
-
 	finish, startCounting := make(chan bool), make(chan bool, 1)
 	// Calculate when to stop based on buffers length.
 	go func() {
