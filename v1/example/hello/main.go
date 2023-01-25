@@ -14,9 +14,9 @@ import (
 
 func main() {
 	g := &generator.Det{
-		TotalGraphs: 20,
+		TotalGraphs: 100,
 		Print:       false,
-		Seed:        10,
+		Seed:        1,
 	}
 
 	r, err := render.NewPortAudio()

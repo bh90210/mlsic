@@ -39,7 +39,7 @@ func (d *Det) Dump() ([]*simple.WeightedUndirectedGraph, error) {
 	rand.Seed(d.Seed)
 
 	// Start the creation of graphs.
-	for i := 0; i < d.TotalGraphs; i++ {
+	for y := 0; y < d.TotalGraphs; y++ {
 		g := simple.NewWeightedUndirectedGraph(0, 0)
 		totalNodes := rand.Intn(100)
 		for {
@@ -74,7 +74,7 @@ func (d *Det) Dump() ([]*simple.WeightedUndirectedGraph, error) {
 				g.SetWeightedEdge(&internal.AttrEdge{
 					F:   g.Node(int64(i)),
 					T:   g.Node(int64(i + half)),
-					W:   float64(2),
+					W:   float64(1),
 					Dot: []encoding.Attribute{{Key: "label", Value: strconv.Itoa(1)}},
 				})
 			}
@@ -88,7 +88,7 @@ func (d *Det) Dump() ([]*simple.WeightedUndirectedGraph, error) {
 					g.SetWeightedEdge(&internal.AttrEdge{
 						F:   g.Node(int64(i)),
 						T:   g.Node(int64(i + 1)),
-						W:   float64(3),
+						W:   float64(2),
 						Dot: []encoding.Attribute{{Key: "label", Value: strconv.Itoa(2)}},
 					})
 				}

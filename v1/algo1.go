@@ -3,7 +3,6 @@
 package mlsic
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -30,14 +29,14 @@ const (
 // Algo1 holds all necessary dependencies for the algorithm to run.
 type Algo1 struct {
 	// Model is used as Model.Dump() to retrieve to total of graphs Algo1 should process.
-	Model Graph
+	Graphs Graph
 	// Outputs holds output renders.
 	Outputs []Renderer
 	// Panning is used as Panning.Apply(sine, value) to pan the sine waves generated.
 	Panning Pan
 	// Format (audio.Format) holds number of channels and sample-rate in Hz.
 	Format *audio.Format
-	// Logging .
+	// Logging enables logging during Algo1.Run().
 	Logging bool
 
 	channels int
@@ -60,10 +59,10 @@ type event struct {
 // NewAlgo1 creates an Algo1 with the default values.
 // It accepts options for custom setup, ie different audio format
 // or multiple renderers (ie, save as WAV and play via PortAudio.)
-func NewAlgo1(m Graph, r Renderer, opts ...Algo1Option) (a1 *Algo1) {
+func NewAlgo1(g Graph, r Renderer, opts ...Algo1Option) (a1 *Algo1) {
 	// Set default values to the named return value a1.
 	a1 = &Algo1{
-		Model:   m,
+		Graphs:  g,
 		Outputs: []Renderer{r},
 
 		Format: audio.FormatMono44100,
@@ -90,7 +89,7 @@ func (a *Algo1) Run() error {
 
 	// Get graphs from model.
 	var err error
-	a.graphs, err = a.Model.Dump()
+	a.graphs, err = a.Graphs.Dump()
 	if err != nil {
 		return err
 	}
@@ -98,7 +97,8 @@ func (a *Algo1) Run() error {
 	l.Info("finished graph dumping", "number of graphs", len(a.graphs))
 
 	var tempBuffer = make(map[int][]*audio.PCMBuffer)
-	wg, _ := errgroup.WithContext(context.Background())
+	var wg errgroup.Group
+
 	// Construct signal/music events out of each graph concurrently.
 	for i, g := range a.graphs {
 
@@ -120,15 +120,15 @@ func (a *Algo1) Run() error {
 			// Get all nodes of the graph as slice.
 			nodes := graph.NodesOf(g.Nodes())
 
-			// Create the music events and assign them nodes' IDs.
+			// Create the music events and assign them nodes' IDs and graph analysis results.
 			events := a.events[i]
 			for _, v := range nodes {
 				events = append(events, &event{id: v.ID(), ga: result, bronKer: bronKer})
 			}
 
-			// A helper variable to aid us determine the maximum event length
+			// maxDurationEvent is a helper variable to aid us determine the maximum event length
 			// so we can create an equivalent long audio buffer.
-			var maxDurationEvent float64
+			var maxDurationEvent int
 			var eventWg sync.WaitGroup
 
 			eventWg.Add(len(events))
@@ -150,14 +150,11 @@ func (a *Algo1) Run() error {
 					// Append buffers to event's signal.
 					e.signal = append(e.signal, panBuffers...)
 
-					eventLength := e.A + e.D + e.R
-
 					a.mu.Lock()
-					if maxDurationEvent < eventLength {
-						maxDurationEvent = eventLength
+					if maxDurationEvent < len(e.signal[0].F32) {
+						maxDurationEvent = len(e.signal[0].F32)
 					}
 					a.mu.Unlock()
-
 				}(e)
 			}
 
@@ -165,24 +162,7 @@ func (a *Algo1) Run() error {
 
 			lg.Info("writing events to buffers", "number of events", len(events))
 
-			// Prepare buffers that will hold the combined signal of all events.
-			var eventBuffer []*audio.PCMBuffer
-			for i := 0; i < a.channels; i++ {
-				eventBuffer = append(eventBuffer,
-					&audio.PCMBuffer{
-						Format: a.Format,
-						F32:    make([]float32, int(maxDurationEvent/(1000/float64(a.Format.SampleRate)))),
-					})
-			}
-
-			// Combine signals together.
-			for _, e := range events {
-				for c := 0; c < a.channels; c++ {
-					for i, v := range e.signal[c].F32 {
-						eventBuffer[c].F32[i] += v
-					}
-				}
-			}
+			eventBuffer := a.createTempBuffer(events, maxDurationEvent)
 
 			a.mu.Lock()
 			tempBuffer[i] = eventBuffer
@@ -200,25 +180,7 @@ func (a *Algo1) Run() error {
 
 	// TODO: compress/limit signal before appending it to the final buffers.
 
-	var finalBuffer []*audio.PCMBuffer
-	for i := 0; i < a.channels; i++ {
-		finalBuffer = append(finalBuffer,
-			&audio.PCMBuffer{
-				Format:         a.Format,
-				DataType:       audio.DataTypeF32,
-				SourceBitDepth: 32,
-			})
-	}
-
-	// Append temp buffers to final buffers.
-	for y := 0; y < len(a.graphs); y++ {
-		for i, v := range finalBuffer {
-			v.F32 = append(v.F32, tempBuffer[y][i].F32...)
-		}
-	}
-
-	// Calculate the duration of the audio buffer(s).
-	duration, err := time.ParseDuration(fmt.Sprintf("%vms", int(float64(len(finalBuffer[0].F32))*(1000/float64(a.Format.SampleRate)))))
+	finalBuffer, duration, err := a.createFinalBuffer(tempBuffer)
 	if err != nil {
 		return err
 	}
@@ -284,6 +246,61 @@ func (a *Algo1) processEvent(e *event) {
 	// a.mu.Lock()
 	e.pan = float32(calc.LinearScale(panValue, panValueMinMax, panRangeMinMax))
 	// a.mu.Unlock()
+}
+
+func (a *Algo1) createTempBuffer(events []*event, maxDurationEvent int) []*audio.PCMBuffer {
+	// Prepare buffers that will hold the combined signal of all events.
+	var eventBuffer []*audio.PCMBuffer
+
+	for i := 0; i < a.channels; i++ {
+		eventBuffer = append(eventBuffer,
+			&audio.PCMBuffer{
+				Format: a.Format,
+				// F32:    make([]float32, int(maxDurationEvent/(1000/float64(a.Format.SampleRate)))),
+				F32: make([]float32, maxDurationEvent),
+			})
+	}
+
+	// Combine signals together.
+	for _, e := range events {
+		for c := 0; c < a.channels; c++ {
+			for i, v := range e.signal[c].F32 {
+				eventBuffer[c].F32[i] += v
+			}
+		}
+	}
+
+	return eventBuffer
+}
+
+// TODO: make this and above function one generic func.
+func (a *Algo1) createFinalBuffer(tempBuffer map[int][]*audio.PCMBuffer) ([]*audio.PCMBuffer, time.Duration, error) {
+	var finalBuffer []*audio.PCMBuffer
+
+	// Init final buffer(s).
+	for i := 0; i < a.channels; i++ {
+		finalBuffer = append(finalBuffer,
+			&audio.PCMBuffer{
+				Format:         a.Format,
+				DataType:       audio.DataTypeF32,
+				SourceBitDepth: 32,
+			})
+	}
+
+	// Append temp buffers to final buffer(s).
+	for y := 0; y < len(a.graphs); y++ {
+		for i, v := range finalBuffer {
+			v.F32 = append(v.F32, tempBuffer[y][i].F32...)
+		}
+	}
+
+	// Calculate the duration of the audio buffer(s).
+	duration, err := time.ParseDuration(fmt.Sprintf("%vms", int(float64(len(finalBuffer[0].F32))*(1000/float64(a.Format.SampleRate)))))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return finalBuffer, duration, nil
 }
 
 // Algo1Option if a custom type function that accepts *Algo1
