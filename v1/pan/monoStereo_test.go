@@ -6,10 +6,10 @@ import (
 
 	"github.com/bh90210/mlsic/v1"
 	"github.com/go-audio/audio"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
-var tests = map[string]struct {
+var testCases = map[string]struct {
 	pan          mlsic.Pan
 	signal       audio.PCMBuffer
 	position     float32
@@ -40,26 +40,26 @@ var tests = map[string]struct {
 }
 
 func TestApply(t *testing.T) {
-	r := require.New(t)
+	a := assert.New(t)
 
-	for name, tc := range tests {
+	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			got := tc.pan.Apply(tc.signal, tc.position)
 
-			r.Len(got, tc.wantChannels)
-			r.Equal(tc.wantSignal, got)
+			a.Len(got, tc.wantChannels)
+			a.Equal(tc.wantSignal, got)
 		})
 	}
 }
 
 func TestChannels(t *testing.T) {
-	r := require.New(t)
+	a := assert.New(t)
 
-	for name, tc := range tests {
+	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			got := tc.pan.Channels()
 
-			r.Equal(tc.wantChannels, got)
+			a.Equal(tc.wantChannels, got)
 		})
 	}
 }

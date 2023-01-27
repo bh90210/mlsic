@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/bh90210/mlsic/v1/internal"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/encoding"
 	"gonum.org/v1/gonum/graph/simple"
 )
 
-var graphNetworkTests = map[string]struct {
+var graphNetworkTestCases = map[string]struct {
 	numberOfNodes int
 	opts          []NetworkOption
 	nodeValue     map[NetworkOption]map[int64]float64
@@ -35,9 +35,9 @@ var graphNetworkTests = map[string]struct {
 }
 
 func TestGraphNetwork(t *testing.T) {
-	r := require.New(t)
+	a := assert.New(t)
 
-	for name, tc := range graphNetworkTests {
+	for name, tc := range graphNetworkTestCases {
 		t.Run(name, func(t *testing.T) {
 			g := simple.NewWeightedUndirectedGraph(0, 0)
 			for i := 0; i < tc.numberOfNodes; i++ {
@@ -64,8 +64,8 @@ func TestGraphNetwork(t *testing.T) {
 			}
 
 			result := GraphNetwork(g, tc.opts...)
-			r.Equal(tc.nodeValue, result.NodeValue)
-			r.Equal(tc.mm, result.MM)
+			a.Equal(tc.nodeValue, result.NodeValue)
+			a.Equal(tc.mm, result.MM)
 		})
 	}
 }

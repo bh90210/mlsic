@@ -5,6 +5,7 @@ package render
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/bh90210/mlsic/v1"
 	"github.com/go-audio/aiff"
@@ -27,7 +28,7 @@ type Wav struct {
 // .wav file named /path/to/file/0.wav for the first channel, /path/to/file/1.wav for the second etc.
 func (w *Wav) Render(pcmBuffer []*audio.PCMBuffer) error {
 	for i, buf := range pcmBuffer {
-		f, err := os.Create(fmt.Sprintf("%s/%v.wav", w.Filepath, i))
+		f, err := os.Create(filepath.Join(w.Filepath, fmt.Sprintf("%v.wav", i)))
 		if err != nil {
 			return err
 		}
@@ -77,7 +78,7 @@ type Aiff struct {
 // .aiff file named /path/to/file/0.aiff for the first channel, /path/to/file/1.aiff for the second etc.
 func (a *Aiff) Render(pcmBuffer []*audio.PCMBuffer) error {
 	for i, buf := range pcmBuffer {
-		f, err := os.Create(fmt.Sprintf("%s/%v.wav", a.Filepath, i))
+		f, err := os.Create(filepath.Join(a.Filepath, fmt.Sprintf("%v.aiff", i)))
 		if err != nil {
 			return err
 		}
