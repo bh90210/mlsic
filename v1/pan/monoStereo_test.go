@@ -6,7 +6,7 @@ import (
 
 	"github.com/bh90210/mlsic/v1"
 	"github.com/go-audio/audio"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var tests = map[string]struct {
@@ -40,20 +40,26 @@ var tests = map[string]struct {
 }
 
 func TestApply(t *testing.T) {
+	r := require.New(t)
+
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			got := tc.pan.Apply(tc.signal, tc.position)
-			assert.Len(t, got, tc.wantChannels)
-			assert.Equal(t, tc.wantSignal, got)
+
+			r.Len(got, tc.wantChannels)
+			r.Equal(tc.wantSignal, got)
 		})
 	}
 }
 
 func TestChannels(t *testing.T) {
+	r := require.New(t)
+
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			got := tc.pan.Channels()
-			assert.Equal(t, tc.wantChannels, got)
+
+			r.Equal(tc.wantChannels, got)
 		})
 	}
 }

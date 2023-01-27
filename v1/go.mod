@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/chewxy/math32 v1.10.1
+	github.com/go-audio/aiff v1.1.0
 	github.com/go-audio/audio v1.0.0
 	github.com/go-audio/transforms v0.0.0-20180121090939-51830ccc35a5
 	github.com/go-audio/wav v1.1.0

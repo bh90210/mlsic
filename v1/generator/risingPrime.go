@@ -7,7 +7,6 @@ package generator
 import (
 	"fmt"
 	"math/big"
-	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
@@ -22,23 +21,20 @@ import (
 
 var _ mlsic.Graph = (*Prime1)(nil)
 
-// Prime1 implements mlsic.VGAE.
+// Prime1 implements mlsic.Graph. If it a deterministic graph generator
+// that starts from a asimple graph with few nodes and scales up nodes
+// for the next graph following primes numbers.
 type Prime1 struct {
 	// TotalGraphs total numbers of graphs to be generated.
 	TotalGraphs int
 	// Print if true renders all graphs generated as .dot and subsequently .svg files.
 	Print bool
-	// Seed of the rand.Seed() function.
-	Seed int64
 }
 
-// Dump returns a deterministic sequences of graphs for dev purposes.
+// Dump returns a deterministic sequence of graphs for dev purposes.
 func (p *Prime1) Dump() ([]*simple.WeightedUndirectedGraph, error) {
 	// Init graphs variable. This slice will hold and return all generated graphs.
 	var graphs []*simple.WeightedUndirectedGraph
-
-	// Seed the rand function.
-	rand.Seed(p.Seed)
 
 	// Primes is a helper slice with equal primes as p.MaxNodes.
 	var primes []int

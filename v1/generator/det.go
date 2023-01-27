@@ -20,7 +20,8 @@ import (
 
 var _ mlsic.Graph = (*Det)(nil)
 
-// Det implements mlsic.VGAE.
+// Det implements mlsic.Graph. It is a deterministic graph generator
+// meant to be used for developing Algo1.
 type Det struct {
 	// TotalGraphs total numbers of graphs to be generated.
 	TotalGraphs int

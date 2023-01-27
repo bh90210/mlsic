@@ -111,7 +111,7 @@ func (a *Algo1) Run() error {
 			lg.Info("starting processing")
 
 			// Make a new analysis of the graph.
-			result := calc.GraphNetwork(a.graphs[i])
+			result := calc.GraphNetwork(g)
 			// BronKerbosch maximal cliques will help in determining ADR times.
 			bronKer := topo.BronKerbosch(g)
 			// mstG := simple.NewWeightedUndirectedGraph(0, 0)
@@ -255,9 +255,10 @@ func (a *Algo1) createTempBuffer(events []*event, maxDurationEvent int) []*audio
 	for i := 0; i < a.channels; i++ {
 		eventBuffer = append(eventBuffer,
 			&audio.PCMBuffer{
-				Format: a.Format,
-				// F32:    make([]float32, int(maxDurationEvent/(1000/float64(a.Format.SampleRate)))),
-				F32: make([]float32, maxDurationEvent),
+				Format:         a.Format,
+				DataType:       audio.DataTypeF32,
+				SourceBitDepth: 32,
+				F32:            make([]float32, maxDurationEvent),
 			})
 	}
 

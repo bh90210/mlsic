@@ -1,4 +1,4 @@
-// Package main holds a simple example demonstrating the use of mlsic packages with a CLI.
+// This is simple example demonstrating the use of mlsic packages with a CLI.
 package main
 
 import (

@@ -35,7 +35,9 @@ func SineGeneration(f *audio.Format, opts SineOptions) audio.PCMBuffer {
 	var phase float32
 	var step = opts.Freq / float32(f.SampleRate)
 	var signal = audio.PCMBuffer{
-		Format: f,
+		Format:         f,
+		DataType:       audio.DataTypeF32,
+		SourceBitDepth: 32,
 	}
 
 	attackInSamples := int(opts.A / (1000 / float64(f.SampleRate)))
