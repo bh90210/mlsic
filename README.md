@@ -1,4 +1,6 @@
 # Mlsic v1
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fbh90210%2Fmlsic.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fbh90210%2Fmlsic?ref=badge_shield)
+
 
 IN DEVELOPMENT
 
@@ -23,3 +25,6 @@ Alternatively under `/render` you will find a wav and aiff renderer for 100% off
 #### Dot cli
 
 If you wish to render SVG files out of your generated graphs (see `/generator`) you will need Graphviz Dot [cli installed](https://graphviz.org/download/). 
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fbh90210%2Fmlsic.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fbh90210%2Fmlsic?ref=badge_large)
