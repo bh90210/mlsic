@@ -1,6 +1,4 @@
 <p align="left">
-  <br/>
-  <br/>
   <a href="https://goreportcard.com/report/github.com/bh90210/mlsic">
     <img src="https://goreportcard.com/badge/github.com/bh90210/mlsic" />
   </a>
