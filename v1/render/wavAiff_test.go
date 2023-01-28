@@ -6,14 +6,18 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-audio/aiff"
 	"github.com/go-audio/audio"
 	"github.com/go-audio/wav"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
-var tests = map[string]struct {
+var testCases = map[string]struct {
 	wav    Wav
 	signal []*audio.PCMBuffer
+
+	aiff       Aiff
+	aiffsignal []*audio.PCMBuffer
 }{
 	"one channel": {
 		wav: Wav{
@@ -24,7 +28,14 @@ var tests = map[string]struct {
 			},
 		},
 		signal: []*audio.PCMBuffer{
-			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{1}},
+			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{-0.5}},
+		},
+
+		aiff: Aiff{
+			Filepath: "aiffone",
+		},
+		aiffsignal: []*audio.PCMBuffer{
+			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{-0.5}},
 		},
 	},
 	"two channels": {
@@ -33,49 +44,102 @@ var tests = map[string]struct {
 			Meta:     (*wav.Metadata)(nil),
 		},
 		signal: []*audio.PCMBuffer{
-			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{0}},
-			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{1}},
+			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{0.5}},
+			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{0.9}},
+		},
+
+		aiff: Aiff{
+			Filepath: "aifftwo",
+		},
+		aiffsignal: []*audio.PCMBuffer{
+			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{0.5}},
+			{Format: &audio.Format{NumChannels: 1, SampleRate: 44100}, DataType: audio.DataTypeF32, SourceBitDepth: 32, F32: []float32{0.9}},
 		},
 	},
 }
 
-func TestRender(t *testing.T) {
-	r := require.New(t)
+func TestWavRender(t *testing.T) {
+	a := assert.New(t)
 
-	for name, tc := range tests {
+	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			filePath, err := os.MkdirTemp("", tc.wav.Filepath)
-			r.NoError(err)
+			a.NoError(err)
 
 			tc.wav.Filepath = filePath
 
 			err = tc.wav.Render(tc.signal)
-			r.NoError(err)
+			a.NoError(err)
 
 			for i := 0; i < len(tc.signal); i++ {
 				wave := filepath.Join(filePath, fmt.Sprintf("%v.wav", i))
 				f, err := os.Open(wave)
-				r.NoError(err)
+				a.NoError(err)
 
 				dec := wav.NewDecoder(f)
+				a.NoError(dec.Err())
+
 				dec.ReadMetadata()
-				r.Equal(tc.wav.Meta, dec.Metadata)
+				a.Equal(tc.wav.Meta, dec.Metadata)
 
-				r.NoError(dec.Err())
-
-				r.NoError(dec.Rewind())
+				a.NoError(dec.Rewind())
 				buf, err := dec.FullPCMBuffer()
-				r.NoError(err)
+				a.NoError(err)
+
+				a.EqualValues(tc.signal[i].SourceBitDepth, buf.SourceBitDepth)
 
 				i32 := tc.signal[i].AsIntBuffer()
-				r.NotNil(i32.Data)
-				r.NotNil(buf.Data)
-				r.Equal(i32.Data, buf.Data)
+				a.NotNil(i32.Data)
+				a.NotNil(buf.Data)
+				a.Equal(i32.Data, buf.Data)
 
-				r.NoError(dec.Rewind())
-				r.Equal(tc.signal[i].Format, dec.Format())
+				a.NoError(dec.Rewind())
+				a.Equal(tc.signal[i].Format, dec.Format())
 
-				r.NoError(f.Close())
+				a.NoError(f.Close())
+			}
+		})
+	}
+}
+
+func TestAiffRender(t *testing.T) {
+	a := assert.New(t)
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			filePath, err := os.MkdirTemp("", tc.aiff.Filepath)
+			a.NoError(err)
+
+			tc.aiff.Filepath = filePath
+
+			err = tc.aiff.Render(tc.aiffsignal)
+			a.NoError(err)
+
+			for i := 0; i < len(tc.aiffsignal); i++ {
+				aifff := filepath.Join(filePath, fmt.Sprintf("%v.aiff", i))
+				f, err := os.Open(aifff)
+				a.NoError(err)
+
+				dec := aiff.NewDecoder(f)
+				a.NoError(dec.Err())
+				a.True(dec.IsValidFile())
+
+				buf, err := dec.FullPCMBuffer()
+				a.NoError(err)
+				a.NotNil(buf.Data)
+
+				a.EqualValues(tc.aiffsignal[i].SourceBitDepth, buf.SourceBitDepth)
+				a.Equal(dec.Format(), buf.PCMFormat())
+
+				i32 := tc.aiffsignal[i].AsIntBuffer()
+				a.NotNil(i32.Data)
+
+				a.Equal(i32.Data, buf.Data)
+
+				a.Equal(tc.aiffsignal[i].Format, dec.Format())
+
+				a.NoError(dec.Rewind())
+				a.NoError(f.Close())
 			}
 		})
 	}
