@@ -11,8 +11,8 @@ import (
 	"os/exec"
 	"strconv"
 
-	"github.com/bh90210/mlsic/v1"
-	"github.com/bh90210/mlsic/v1/internal"
+	"github.com/bh90210/mlsic"
+	"github.com/bh90210/mlsic/internal"
 	"gonum.org/v1/gonum/graph/encoding"
 	"gonum.org/v1/gonum/graph/encoding/dot"
 	"gonum.org/v1/gonum/graph/simple"

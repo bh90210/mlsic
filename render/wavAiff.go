@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bh90210/mlsic/v1"
+	"github.com/bh90210/mlsic"
 	"github.com/go-audio/aiff"
 	"github.com/go-audio/audio"
 	"github.com/go-audio/transforms"

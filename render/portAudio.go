@@ -5,7 +5,7 @@ package render
 import (
 	"time"
 
-	"github.com/bh90210/mlsic/v1"
+	"github.com/bh90210/mlsic"
 	"github.com/go-audio/audio"
 	"github.com/gordonklaus/portaudio"
 )

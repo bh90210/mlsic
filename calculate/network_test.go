@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/bh90210/mlsic/v1/internal"
+	"github.com/bh90210/mlsic/internal"
 	"github.com/stretchr/testify/assert"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/encoding"

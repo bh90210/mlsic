@@ -1,4 +1,4 @@
-module github.com/bh90210/mlsic/v1
+module github.com/bh90210/mlsic
 
 go 1.19
 

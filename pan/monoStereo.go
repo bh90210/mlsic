@@ -3,7 +3,7 @@
 package pan
 
 import (
-	"github.com/bh90210/mlsic/v1"
+	"github.com/bh90210/mlsic"
 	"github.com/go-audio/audio"
 )
 

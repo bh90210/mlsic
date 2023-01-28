@@ -5,10 +5,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/bh90210/mlsic/v1"
-	"github.com/bh90210/mlsic/v1/generator"
-	"github.com/bh90210/mlsic/v1/pan"
-	"github.com/bh90210/mlsic/v1/render"
+	"github.com/bh90210/mlsic"
+	"github.com/bh90210/mlsic/generator"
+	"github.com/bh90210/mlsic/pan"
+	"github.com/bh90210/mlsic/render"
 	"github.com/go-audio/wav"
 )
 

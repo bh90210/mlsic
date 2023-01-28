@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	calc "github.com/bh90210/mlsic/v1/calculate"
+	calc "github.com/bh90210/mlsic/calculate"
 	"github.com/go-audio/audio"
 	"github.com/inconshreveable/log15"
 	"golang.org/x/sync/errgroup"
