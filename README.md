@@ -11,13 +11,9 @@
   <a href="https://github.com/bh90210/mlsic/actions/workflows/ci.yml" rel="nofollow">
     <img src="https://img.shields.io/github/actions/workflow/status/bh90210/mlsic/ci.yml?branch=trunk&logo=Github" alt="Build" />
   </a>
-    <a href="https://github.com/bh90210/mlsic/blob/trunk/LICENSE">
-    <img alt="GitHub" src="https://img.shields.io/github/license/bh90210/mlsic"/>
-  </a>
 </p>
 
-
-# Mlsic v1
+# Mlsic
 
 IN DEVELOPMENT
 

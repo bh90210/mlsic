@@ -1,6 +1,3 @@
-// Package calculate provides convenient functions to help perform various
-// repetitive calculations. It is meant to be used by the top level package
-// inside compositional algos (ie. Algo1.)
 package calculate
 
 import (

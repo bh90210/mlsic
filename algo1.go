@@ -1,5 +1,3 @@
-// Package mlsic provides compositional algorithms
-// and abstractions for producing audio.
 package mlsic
 
 import (

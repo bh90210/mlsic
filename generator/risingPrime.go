@@ -1,7 +1,3 @@
-// Package generator implements mlsic.Graph but instead of using
-// GNNs for graph generation, it uses deterministic algos.
-// It exists mostly as a developer's tool to help seed the
-// process of writing Algo1.
 package generator
 
 import (

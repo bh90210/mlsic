@@ -1,5 +1,3 @@
-// Package render holds various mlsic.Renderer implementations.
-// It should be used along top package compositional algos.
 package render
 
 import (
