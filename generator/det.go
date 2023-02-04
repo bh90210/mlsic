@@ -29,6 +29,8 @@ type Det struct {
 	Print bool
 	// Seed of the rand.Seed() function.
 	Seed int64
+	// MaxNodes is the maximum number of nodes allowed per graph.
+	MaxNodes int
 }
 
 // Dump returns a deterministic sequence of graphs for dev purposes.
@@ -107,12 +109,12 @@ func (d *Det) Dump() ([]*simple.WeightedUndirectedGraph, error) {
 				return nil, err
 			}
 
-			err = os.WriteFile(fmt.Sprint(i)+".dot", data, 0644)
+			err = os.WriteFile(fmt.Sprintf("%v.dot", i), data, 0644)
 			if err != nil {
 				return nil, err
 			}
 
-			_, err = exec.Command("dot", "-Tsvg", fmt.Sprint(i)+".dot", "-o", fmt.Sprint(i)+".svg").Output()
+			_, err = exec.Command("dot", "-Tsvg", fmt.Sprintf("%v.dot", i), "-o", fmt.Sprintf("%v.svg", i)).Output()
 			// dot -Tsvg '/current/path/test.dot' -o output.svg
 			if err != nil {
 				return nil, err

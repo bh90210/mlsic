@@ -17,6 +17,7 @@ func main() {
 		TotalGraphs: 100,
 		Print:       false,
 		Seed:        1,
+		MaxNodes:    100,
 	}
 
 	r, err := render.NewPortAudio()
@@ -34,12 +35,12 @@ func main() {
 	wave := &render.Wav{
 		Filepath: filePath[0],
 		Meta: &wav.Metadata{
-			Engineer: "bh90210",
 			Software: "Mlsic",
 			Comments: "Computer music <3",
 		},
 	}
 
+	// TODO: fix bug that wave renderer read's destructively affecting latter renderers.
 	a1 := mlsic.NewAlgo1(g, r, mlsic.Algo1WithPan(p),
 		mlsic.Algo1WithAdditionalRenderer(wave), mlsic.Algo1WithLogging())
 
