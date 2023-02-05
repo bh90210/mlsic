@@ -9,6 +9,9 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 )
 
+// NetworkOption is a custom type around the various network calculations we need to perform.
+type NetworkOption int
+
 const (
 	// Betweenness centrality is a measure of centrality in a graph based on shortest paths.
 	Betweenness NetworkOption = iota
@@ -23,9 +26,6 @@ const (
 	// Residual Closeness.
 	Residual
 )
-
-// NetworkOption is a custom type around the various network calculations we need to perform.
-type NetworkOption int
 
 // MinMax is a structure that holds the minimum and maximum of something.
 // It is used to hold the min/max range of the various calculations done to graphs
@@ -97,8 +97,8 @@ func (ga *NetworkAnalysis) calc(opt NetworkOption) {
 		r = network.Residual(ga.graph, ga.allShortest)
 	}
 
-	min := math.MaxFloat64
-	max := math.SmallestNonzeroFloat64
+	var min = math.MaxFloat64
+	var max = math.SmallestNonzeroFloat64
 
 	for _, v := range r {
 		if v < min {

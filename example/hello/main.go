@@ -14,10 +14,12 @@ import (
 
 func main() {
 	g := &generator.Det{
-		TotalGraphs: 100,
+		TotalGraphs: 300,
 		Print:       false,
 		Seed:        1,
-		MaxNodes:    100,
+		MaxNodes:    50,
+		MaxEdges:    10,
+		MaxWeight:   5,
 	}
 
 	r, err := render.NewPortAudio()
@@ -25,7 +27,8 @@ func main() {
 		log.Fatalf("error starting PortAudio: %s", err)
 	}
 
-	p := &pan.LinearStereo{}
+	// p := &pan.LinearStereo{}
+	p := &pan.Mono{}
 
 	filePath := os.Args[1:]
 	if filePath == nil {

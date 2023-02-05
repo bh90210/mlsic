@@ -1,4 +1,3 @@
-// Package pan holds various mlsic.Pan implementations.
 package pan
 
 import (

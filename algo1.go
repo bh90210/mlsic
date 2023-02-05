@@ -2,7 +2,6 @@ package mlsic
 
 import (
 	"fmt"
-	"math/rand"
 	"sync"
 	"time"
 
@@ -13,15 +12,6 @@ import (
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
-)
-
-const (
-	frequencyMin = 30.    // 30 Hz
-	frequencyMax = 15000. // 15 kHz
-	timeMin      = 12.    // 8 milliseconds.
-	timeMax      = 200.   // 5 seconds.
-	panMin       = 0.
-	panMax       = 1.
 )
 
 // Algo1 holds all necessary dependencies for the algorithm to run.
@@ -40,18 +30,9 @@ type Algo1 struct {
 	channels int
 	graphs   []*simple.WeightedUndirectedGraph
 	mu       sync.Mutex
+	wg       errgroup.Group
+	eventWg  sync.WaitGroup
 	events   map[int][]*event
-}
-
-type event struct {
-	id int64
-
-	calc.SineOptions
-	pan    float32
-	signal []*audio.PCMBuffer
-
-	ga      *calc.NetworkAnalysis
-	bronKer [][]graph.Node
 }
 
 // NewAlgo1 creates an Algo1 with the default values.
@@ -76,9 +57,20 @@ func NewAlgo1(g Graph, r Renderer, opts ...Algo1Option) (a1 *Algo1) {
 	return
 }
 
+type event struct {
+	id int64
+
+	calc.SineOptions
+	pan    float32
+	signal []*audio.PCMBuffer
+
+	ga      *calc.NetworkAnalysis
+	bronKer [][]graph.Node
+}
+
 // Run executes the Algo1.
 func (a *Algo1) Run() error {
-	l := log15.New("MLSIC", "Algo1")
+	l := log15.New("mlsic", "Algo1")
 	if !a.Logging {
 		l.SetHandler(log15.DiscardHandler())
 	}
@@ -95,7 +87,6 @@ func (a *Algo1) Run() error {
 	l.Info("finished graph dumping", "number of graphs", len(a.graphs))
 
 	var tempBuffer = make(map[int][]*audio.PCMBuffer)
-	var wg errgroup.Group
 
 	// Construct signal/music events out of each graph concurrently.
 	for i, g := range a.graphs {
@@ -105,7 +96,7 @@ func (a *Algo1) Run() error {
 
 		lg := l.New("graph", i)
 
-		wg.Go(func() error {
+		a.wg.Go(func() error {
 			lg.Info("starting processing")
 
 			// Make a new analysis of the graph.
@@ -127,15 +118,14 @@ func (a *Algo1) Run() error {
 			// maxDurationEvent is a helper variable to aid us determine the maximum event length
 			// so we can create an equivalent long audio buffer.
 			var maxDurationEvent int
-			var eventWg sync.WaitGroup
 
-			eventWg.Add(len(events))
+			a.eventWg.Add(len(events))
 
 			lg.Info("starting generation of events")
 
 			for _, e := range events {
 				go func(e *event) {
-					defer eventWg.Done()
+					defer a.eventWg.Done()
 
 					a.processEvent(e)
 
@@ -145,7 +135,7 @@ func (a *Algo1) Run() error {
 					// Apply panning implementation provided.
 					panBuffers := a.Panning.Apply(sine, e.pan)
 
-					// Append buffers to event's signal.
+					// Append panned buffers to event's signal.
 					e.signal = append(e.signal, panBuffers...)
 
 					a.mu.Lock()
@@ -156,7 +146,7 @@ func (a *Algo1) Run() error {
 				}(e)
 			}
 
-			eventWg.Wait()
+			a.eventWg.Wait()
 
 			lg.Info("writing events to buffers", "number of events", len(events))
 
@@ -170,7 +160,7 @@ func (a *Algo1) Run() error {
 		})
 	}
 
-	if err := wg.Wait(); err != nil {
+	if err := a.wg.Wait(); err != nil {
 		return err
 	}
 
@@ -197,8 +187,18 @@ func (a *Algo1) Run() error {
 	return nil
 }
 
+const (
+	frequencyMin = 30.    // 30 Hz.
+	frequencyMax = 18000. // 18 kHz.
+	timeMin      = 8.     // 8 milliseconds.
+	timeMax      = 100.   // 100 milliseconds.
+	panMin       = 0.
+	panMax       = 1.
+)
+
 func (a *Algo1) processEvent(e *event) {
 	// i := rand.Intn(5)
+	// NEVER HARMONIC or Closeness for freq as it is simply clipping distortion.
 	i := calc.Farness
 
 	value := e.ga.NodeValue[calc.NetworkOption(i)][e.id]
@@ -209,40 +209,40 @@ func (a *Algo1) processEvent(e *event) {
 	e.Freq = float32(calc.LinearScale(value, valueMinMax, rangeMinMax))
 	// a.mu.Unlock()
 
-	ampValue := e.ga.NodeValue[calc.NetworkOption(i)][e.id]
-	ampValueMinMax := e.ga.MM[calc.NetworkOption(i)]
-	ampRangeMinMax := calc.MinMax{Min: 0.00001, Max: 0.009}
+	// ampValue := e.ga.NodeValue[calc.NetworkOption(i)][e.id]
+	// ampValueMinMax := e.ga.MM[calc.NetworkOption(i)]
+	// ampRangeMinMax := calc.MinMax{Min: 0.00001, Max: 0.009}
 
 	// a.mu.Lock()
-	e.Amp = float32(calc.LinearScale(ampValue, ampValueMinMax, ampRangeMinMax))
+	e.Amp = .01
+	// e.Amp = float32(calc.LinearScale(1, ampValueMinMax, ampRangeMinMax))
 	// a.mu.Unlock()
 
-	aValue := e.ga.NodeValue[calc.Farness][e.id]
-	aValueMinMax := e.ga.MM[calc.Farness]
-	aRangeMinMax := calc.MinMax{Min: timeMin, Max: timeMax * rand.Float64()}
+	// aValue := e.ga.NodeValue[calc.Farness][e.id]
+	// aValueMinMax := e.ga.MM[calc.Farness]
+	// aRangeMinMax := calc.MinMax{Min: timeMin, Max: timeMax * rand.Float64()}
 
-	dValue := e.ga.NodeValue[calc.Betweenness][e.id]
-	dValueMinMax := e.ga.MM[calc.Betweenness]
-	dRangeMinMax := calc.MinMax{Min: timeMin, Max: timeMax * rand.Float64()}
+	// dValue := e.ga.NodeValue[calc.BetweennessWeighted][e.id]
+	// dValueMinMax := e.ga.MM[calc.BetweennessWeighted]
+	// dRangeMinMax := calc.MinMax{Min: timeMin, Max: timeMax * rand.Float64()}
 
-	rValue := e.ga.NodeValue[calc.Betweenness][e.id]
-	rValueMinMax := e.ga.MM[calc.Betweenness]
-	rRangeMinMax := calc.MinMax{Min: timeMin, Max: timeMax * rand.Float64()}
+	// rValue := e.ga.NodeValue[calc.BetweennessWeighted][e.id]
+	// rValueMinMax := e.ga.MM[calc.BetweennessWeighted]
+	// rRangeMinMax := calc.MinMax{Min: timeMin, Max: timeMax * rand.Float64()}
 
 	// a.mu.Lock()
-	e.A = calc.LinearScale(aValue, aValueMinMax, aRangeMinMax)
-	// e.A = 0
-	e.D = calc.LinearScale(dValue, dValueMinMax, dRangeMinMax)
-	e.R = calc.LinearScale(rValue, rValueMinMax, rRangeMinMax)
-	// e.R = 0
+	// e.A = calc.LinearScale(aValue, aValueMinMax, aRangeMinMax)
+	e.D = 100
+	// e.D = calc.LinearScale(dValue, dValueMinMax, dRangeMinMax)
+	// e.R = calc.LinearScale(rValue, rValueMinMax, rRangeMinMax)
 	// a.mu.Unlock()
 
-	panValue := e.ga.NodeValue[calc.BetweennessWeighted][e.id]
-	panValueMinMax := e.ga.MM[calc.BetweennessWeighted]
-	panRangeMinMax := calc.MinMax{Min: panMin, Max: panMax}
+	// panValue := e.ga.NodeValue[calc.BetweennessWeighted][e.id]
+	// panValueMinMax := e.ga.MM[calc.BetweennessWeighted]
+	// panRangeMinMax := calc.MinMax{Min: panMin, Max: panMax}
 
 	// a.mu.Lock()
-	e.pan = float32(calc.LinearScale(panValue, panValueMinMax, panRangeMinMax))
+	// e.pan = float32(calc.LinearScale(panValue, panValueMinMax, panRangeMinMax))
 	// a.mu.Unlock()
 }
 
