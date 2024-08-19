@@ -1,8 +1,12 @@
 package main
 
 import (
-	"log"
+	"flag"
+	"os"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/bh90210/mlsic"
 	"github.com/bh90210/mlsic/markov"
@@ -12,6 +16,20 @@ import (
 )
 
 func main() {
+	debug := flag.Bool("debug", false, "sets log level to debug")
+	filesPath := flag.String("files", "", "sets the directory audio files will be saved")
+	modelsPath := flag.String("models", "", "sets the directory model files will be saved")
+
+	flag.Parse()
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if *debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
 	m := markov.Markov{
 		Freq: gomarkov.NewChain(1),
 		Amp:  gomarkov.NewChain(1),
@@ -328,9 +346,9 @@ func main() {
 	from = len(train)
 
 	// Save base model.
-	err := m.Export("/media/byron/disk/mlsic/markov/seed")
+	err := m.Export(*modelsPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("exporting models")
 	}
 
 	// Harmonics.
@@ -390,15 +408,16 @@ func main() {
 	music = append(music, mlsic.Audio(left), mlsic.Audio(right))
 
 	// Render.
-	// p := render.Wav{
-	// 	Filepath: "/media/byron/disk/mlsic/markov/seed",
-	// }
-	p, err := render.NewPortAudio()
-	if err != nil {
-		log.Fatal(err)
+	p := render.Wav{
+		Filepath: *filesPath,
 	}
 
+	// p, err := render.NewPortAudio()
+	// if err != nil {
+	// 	log.Fatal().Err(err).Msg("initializing port audio")
+	// }
+
 	if err := p.Render(music); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("rendering")
 	}
 }
