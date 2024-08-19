@@ -26,11 +26,21 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
+	// Init the harmonics.
+	h := &markov.Harmonics{
+		Partials: map[int]float64{},
+	}
+
+	// Populate the partials.
+	h.Naive()
+
+	// Init a markov song.
 	s := markov.Song{
 		NGenerations:  *ngenerations,
 		FilePath:      *filesPath,
 		ModelsPath:    *modelsPath,
 		SeedModelPath: *seedModelPath,
+		Harmonics:     h,
 	}
 
 	s.NGen()

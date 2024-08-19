@@ -30,7 +30,7 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	m := markov.Markov{
+	m := markov.Train{
 		Freq: gomarkov.NewChain(1),
 		Amp:  gomarkov.NewChain(1),
 		Dur:  gomarkov.NewChain(1),
@@ -39,9 +39,9 @@ func main() {
 	var from int
 
 	// Composition.
-	var train []markov.Sine
+	var train []mlsic.Sine
 	for i := 0; i < 50; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: (440 + (float64(i) * 2)) / float64(i),
 			Amplitude: 0.07,
 			Duration:  time.Duration((100. + float64(i))) * time.Millisecond,
@@ -52,12 +52,12 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 69; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 440. / float64(i),
 			Amplitude: 0.003 * float64(i),
 			Duration:  time.Duration(205.-float64(i)) * time.Millisecond,
 		},
-			markov.Sine{
+			mlsic.Sine{
 				Frequency: 440.,
 				Amplitude: 0.,
 				Duration:  time.Duration(5.+float64(i)) * time.Millisecond,
@@ -68,7 +68,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 69; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: (440 + (float64(i) * 2)) / float64(i),
 			Amplitude: 0.01 * float64(i),
 			Duration:  time.Duration(100.) * time.Millisecond,
@@ -79,7 +79,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 20; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 100. * float64(i),
 			Amplitude: 0.2,
 			Duration:  time.Duration(10.) * time.Millisecond,
@@ -90,7 +90,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 20; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 200. * float64(i),
 			Amplitude: 0.2,
 			Duration:  time.Duration(10.) * time.Millisecond,
@@ -101,7 +101,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 20; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 300. * float64(i),
 			Amplitude: 0.2,
 			Duration:  time.Duration(10.) * time.Millisecond,
@@ -112,7 +112,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 20; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 400. * float64(i),
 			Amplitude: 0.2,
 			Duration:  time.Duration(10.) * time.Millisecond,
@@ -123,7 +123,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 400. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(100.) * time.Millisecond,
@@ -134,7 +134,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 750. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(100.) * time.Millisecond,
@@ -145,7 +145,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 15; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 250. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(100.) * time.Millisecond,
@@ -156,7 +156,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 350. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(70.) * time.Millisecond,
@@ -167,7 +167,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 5; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 350. * float64(i),
 			Amplitude: 0.,
 			Duration:  time.Duration(70.) * time.Millisecond,
@@ -178,7 +178,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 400. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(90.) * time.Millisecond,
@@ -189,7 +189,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 750. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(110.) * time.Millisecond,
@@ -200,7 +200,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 250. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -211,7 +211,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 200. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -222,7 +222,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 150. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -233,7 +233,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 100. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -244,7 +244,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 50. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -255,7 +255,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 0. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -266,7 +266,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 1. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -277,7 +277,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 1. * float64(i),
 			Amplitude: 0.,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -290,7 +290,7 @@ func main() {
 	// Weird break.
 
 	for i := 1; i < 5; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 1. * float64(i),
 			Amplitude: 0.1,
 			Duration:  time.Duration(5000.*i) * time.Millisecond,
@@ -301,7 +301,7 @@ func main() {
 	from = len(train)
 
 	for i := 0; i < 10; i++ {
-		train = append(train, markov.Sine{
+		train = append(train, mlsic.Sine{
 			Frequency: 1. * float64(i),
 			Amplitude: 0.,
 			Duration:  time.Duration(120.) * time.Millisecond,
@@ -313,12 +313,12 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		train = append(train,
-			markov.Sine{
+			mlsic.Sine{
 				Frequency: 1. * float64(i),
 				Amplitude: 0.1,
 				Duration:  time.Duration(108.) * time.Millisecond,
 			},
-			markov.Sine{
+			mlsic.Sine{
 				Frequency: 250. * float64(i),
 				Amplitude: 0.1,
 				Duration:  time.Duration(12.) * time.Millisecond,
@@ -330,12 +330,12 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		train = append(train,
-			markov.Sine{
+			mlsic.Sine{
 				Frequency: 1. * float64(i),
 				Amplitude: 0.1,
 				Duration:  time.Duration(100.) * time.Millisecond,
 			},
-			markov.Sine{
+			mlsic.Sine{
 				Frequency: 50. * float64(i),
 				Amplitude: 0.1,
 				Duration:  time.Duration(50.) * time.Millisecond,
@@ -407,15 +407,10 @@ func main() {
 	var music []mlsic.Audio
 	music = append(music, mlsic.Audio(left), mlsic.Audio(right))
 
-	// Render.
+	// Render audio as .wav files.
 	p := render.Wav{
 		Filepath: *filesPath,
 	}
-
-	// p, err := render.NewPortAudio()
-	// if err != nil {
-	// 	log.Fatal().Err(err).Msg("initializing port audio")
-	// }
 
 	if err := p.Render(music); err != nil {
 		log.Fatal().Err(err).Msg("rendering")

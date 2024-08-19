@@ -1,6 +1,8 @@
 // Package mlsic .
 package mlsic
 
+import "time"
+
 // Audio is a 64 bit float slice with PCM signal values from -1.0 to 1.0.
 type Audio []float64
 
@@ -17,4 +19,11 @@ type Writer interface {
 // Renderer .
 type Renderer interface {
 	Render([]Audio) error
+}
+
+// Sine .
+type Sine struct {
+	Frequency float64
+	Amplitude float64
+	Duration  time.Duration
 }

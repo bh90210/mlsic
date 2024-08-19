@@ -1,0 +1,244 @@
+package markov
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"time"
+
+	"github.com/bh90210/mlsic"
+	"github.com/mb-14/gomarkov"
+	"github.com/rs/zerolog/log"
+)
+
+// Song works as the entrance to the Markov chains generation.
+type Song struct {
+	// NGenerations is the number of generations to generate based on the initial seed.
+	NGenerations int
+	// FilePath is the directory the audio files wil be saved.
+	FilePath string
+	// ModelsPath is the directory the models produced out of each ngeneration wil be saved.
+	ModelsPath string
+	// SeedModelPath is the path of the initial seed jsons.
+	SeedModelPath string
+
+	// Harmonics is the harmonics structure that will be used for audio generation.
+	Harmonics *Harmonics
+}
+
+type model struct {
+	Int      int `json:"int"`
+	SpoolMap any `json:"spool_map"`
+	FreqMat  any `json:"freq_mat"`
+}
+
+// NGen will process the seed model and based on it will generate the appropriate amount of generation cycles.
+func (s *Song) NGen() {
+	log.Info().Msg("NGen")
+
+	// Generate a new model and audio output for each generation.
+	for i := 0; i < s.NGenerations; i++ {
+		log.Info().Int("generation", i).Msg("NGen")
+
+		var freqModel string
+		var ampModel string
+		var durModel string
+
+		index := strconv.Itoa(i)
+
+		// If we are on the first iteration we must start by reading
+		// the seed model.
+		if i == 0 {
+			freqModel = filepath.Join(s.SeedModelPath, "freq.json")
+			ampModel = filepath.Join(s.SeedModelPath, "amp.json")
+			durModel = filepath.Join(s.SeedModelPath, "dur.json")
+
+			// If the seed model is already processed read the previously generated model.
+		} else {
+			previousModelsIndex := strconv.Itoa(i - 1)
+
+			freqModel = filepath.Join(s.ModelsPath, "gen"+previousModelsIndex, "freq.json")
+			ampModel = filepath.Join(s.ModelsPath, "gen"+previousModelsIndex, "amp.json")
+			durModel = filepath.Join(s.ModelsPath, "gen"+previousModelsIndex, "dur.json")
+		}
+
+		log.Info().Int("generation", i).Msg("reading files")
+
+		freq, err := os.ReadFile(freqModel)
+		if err != nil {
+			log.Fatal().Err(err).Msg("reading freq")
+		}
+
+		amp, err := os.ReadFile(ampModel)
+		if err != nil {
+			log.Fatal().Err(err).Msg("reading amp")
+		}
+
+		dur, err := os.ReadFile(durModel)
+		if err != nil {
+			log.Fatal().Err(err).Msg("reading dur")
+		}
+
+		log.Info().Int("generation", i).Msg("creating chains")
+
+		// Prepare a Markov Train so we can load the previously created model.
+		t := Train{
+			Freq: gomarkov.NewChain(1),
+			Amp:  gomarkov.NewChain(1),
+			Dur:  gomarkov.NewChain(1),
+		}
+
+		// Load previously generated model.
+		t.Freq.UnmarshalJSON(freq)
+		t.Amp.UnmarshalJSON(amp)
+		t.Dur.UnmarshalJSON(dur)
+
+		// Generate new values for frequencies, amplitudes and durations based on previous model.
+		var frequencies model
+		err = json.Unmarshal(freq, &frequencies)
+		if err != nil {
+			log.Fatal().Err(err).Msg("unmarsh freq")
+		}
+
+		log.Info().Int("generation", i).Str("field", "freq").Msg("entering loop")
+
+		generationFreqs, err := loopMapped(frequencies.SpoolMap, t.Freq)
+		if err != nil {
+			log.Fatal().Err(err).Msg("freq loop")
+		}
+
+		var amplitudes model
+		err = json.Unmarshal(amp, &amplitudes)
+		if err != nil {
+			log.Fatal().Err(err).Msg("unmarsh amp")
+		}
+
+		log.Info().Int("generation", i).Str("field", "amp").Msg("entering loop")
+
+		generationAmps, err := loopMapped(amplitudes.SpoolMap, t.Amp)
+		if err != nil {
+			log.Fatal().Err(err).Msg("amp loop")
+		}
+
+		var durations model
+		err = json.Unmarshal(dur, &durations)
+		if err != nil {
+			log.Fatal().Err(err).Msg("unmarsh dur")
+		}
+
+		log.Info().Int("generation", i).Str("field", "dur").Msg("entering loop")
+
+		generationDurs, err := loopMapped(durations.SpoolMap, t.Dur)
+		if err != nil {
+			log.Fatal().Err(err).Msg("dur loop")
+		}
+
+		log.Info().Int("generation", i).Msg("creating sines train")
+
+		// Create sines train.
+		var train []mlsic.Sine
+
+		for i, freqs := range generationFreqs {
+			var outOfBoundsAmp bool
+			var outOfBoundsDur bool
+
+			if len(generationAmps)-1 < i {
+				outOfBoundsAmp = true
+			}
+
+			if len(generationDurs)-1 < i {
+				outOfBoundsDur = true
+			}
+
+			for o, freq := range freqs {
+				// TODO: 0 is arbitrary, fix it.
+				amp := 0.
+				if !outOfBoundsAmp && !(len(generationAmps[i])-1 < o) {
+					amp = generationAmps[i][o]
+				}
+
+				// TODO: 100 is arbitrary, fix it.
+				dur := 100.
+				if !outOfBoundsDur && !(len(generationDurs[i])-1 < o) {
+					dur = generationDurs[i][o]
+				}
+
+				train = append(train, mlsic.Sine{
+					Frequency: freq,
+					Amplitude: amp,
+					Duration:  time.Duration(dur) * time.Millisecond,
+				})
+			}
+		}
+
+		log.Info().Int("generation", i).Msg("audio files gen")
+
+		filePath := filepath.Join(s.FilePath, "gen"+index)
+
+		err = os.MkdirAll(filePath, 0755)
+		if err != nil {
+			log.Fatal().Err(err).Msg("creating audio directory")
+		}
+
+		// Generate audio based on the new model.
+		Generate(filePath, train, s.Harmonics)
+
+		log.Info().Int("generation", i).Msg("export models")
+
+		// Save the new model.
+		t.Add(train)
+
+		modelsPath := filepath.Join(s.ModelsPath, "gen"+index)
+
+		err = os.MkdirAll(modelsPath, 0755)
+		if err != nil {
+			log.Fatal().Err(err).Msg("creating models directory")
+		}
+
+		err = t.Export(modelsPath)
+		if err != nil {
+			log.Fatal().Err(err).Msg("exporting seed")
+		}
+	}
+}
+
+func loopMapped(spoolMap any, chain *gomarkov.Chain) ([][]float64, error) {
+	var temporaryTrain [][]float64
+
+	mapped := spoolMap.(map[string]interface{})
+	for key := range mapped {
+		if key == "$" || key == "^" || key == "+Inf" {
+			continue
+		}
+
+		var temp []float64
+
+		starting := []string{key}
+		// TODO: 100 is arbitrary, fix it.
+		for i := 0; i < 100; i++ {
+			generated, err := chain.Generate(starting)
+			if err != nil {
+				return nil, fmt.Errorf("generated %w %v %v", err, starting, i)
+			}
+
+			if generated == "$" {
+				break
+			}
+
+			flo, err := strconv.ParseFloat(generated, 64)
+			if err != nil {
+				return nil, fmt.Errorf("parse float %w", err)
+			}
+
+			temp = append(temp, flo)
+
+			starting = []string{generated}
+		}
+
+		temporaryTrain = append(temporaryTrain, temp)
+	}
+
+	return temporaryTrain, nil
+}
