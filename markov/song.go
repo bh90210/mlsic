@@ -103,13 +103,13 @@ func (s *Song) NGen() {
 
 		var wg sync.WaitGroup
 
-		wg.Add(3)
-
 		var generationFreqs [][]float64
 		var generationAmps [][]float64
 		var generationDurs [][]float64
 
 		for i := 0; i < 3; i++ {
+			wg.Add(1)
+
 			go func(i int) {
 				defer wg.Done()
 
@@ -127,7 +127,7 @@ func (s *Song) NGen() {
 
 					l.Info().Msg("entering loop")
 
-					generationFreqs, err = loopMapped(l, frequencies.SpoolMap, t.Freq)
+					generationFreqs, err = markovGenerator(l, frequencies.SpoolMap, t.Freq)
 					if err != nil {
 						l.Fatal().Err(err).Msg("freq loop")
 					}
@@ -144,7 +144,7 @@ func (s *Song) NGen() {
 
 					l.Info().Msg("entering loop")
 
-					generationAmps, err = loopMapped(l, amplitudes.SpoolMap, t.Amp)
+					generationAmps, err = markovGenerator(l, amplitudes.SpoolMap, t.Amp)
 					if err != nil {
 						l.Fatal().Err(err).Msg("amp loop")
 					}
@@ -161,7 +161,7 @@ func (s *Song) NGen() {
 
 					l.Info().Msg("entering loop")
 
-					generationDurs, err = loopMapped(l, durations.SpoolMap, t.Dur, true)
+					generationDurs, err = markovGenerator(l, durations.SpoolMap, t.Dur, true)
 					if err != nil {
 						l.Fatal().Err(err).Msg("dur loop")
 					}
@@ -244,7 +244,8 @@ func (s *Song) NGen() {
 	}
 }
 
-func loopMapped(l zerolog.Logger, spoolMap any, chain *gomarkov.Chain, dur ...bool) ([][]float64, error) {
+// TODO: better name.
+func markovGenerator(l zerolog.Logger, spoolMap any, chain *gomarkov.Chain, dur ...bool) ([][]float64, error) {
 	mapped := spoolMap.(map[string]interface{})
 
 	// Sort mapped.
@@ -304,7 +305,7 @@ func loopMapped(l zerolog.Logger, spoolMap any, chain *gomarkov.Chain, dur ...bo
 				}
 
 				// Check is we are looping.
-				foundPattern := findPattern(temp, flo)
+				foundPattern := patternFinder(temp, flo)
 				if foundPattern {
 					l.Debug().
 						Str("generated", generated).
@@ -329,7 +330,7 @@ func loopMapped(l zerolog.Logger, spoolMap any, chain *gomarkov.Chain, dur ...bo
 	return temporaryTrain, nil
 }
 
-func findPattern(temp []float64, flo float64) bool {
+func patternFinder(temp []float64, flo float64) bool {
 	temp = append(temp, flo)
 
 	if len(temp) < 10 {
