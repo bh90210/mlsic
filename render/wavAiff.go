@@ -33,6 +33,8 @@ func (w *Wav) Render(sources []mlsic.Audio) error {
 		wg.Add(1)
 
 		go func(i int, source mlsic.Audio) {
+			defer wg.Done()
+
 			f, err := os.Create(filepath.Join(w.Filepath, fmt.Sprintf("%v.wav", i)))
 			if err != nil {
 				log.Fatal().Err(err).Int("file", i).Msg("creating file")
@@ -76,7 +78,6 @@ func (w *Wav) Render(sources []mlsic.Audio) error {
 
 			log.Info().Int("file length", wave.WrittenBytes).Int("file", i).Msg("file length")
 
-			wg.Done()
 		}(i, source)
 	}
 

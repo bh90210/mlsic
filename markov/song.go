@@ -287,7 +287,8 @@ func loopMapped(l zerolog.Logger, spoolMap any, chain *gomarkov.Chain, dur ...bo
 					Int("inner iter", i).
 					Logger()
 
-				generated, err := chain.GenerateDeterministic(starting, rand.New(rand.NewSource(int64(o))))
+				// generated, err := chain.GenerateDeterministic(starting, rand.New(rand.NewSource(int64(o))))
+				generated, err := chain.GenerateDeterministic(starting, rand.New(rand.NewSource(int64(420))))
 				if err != nil {
 					l.Fatal().Err(err).Msg("generating next markov")
 				}
