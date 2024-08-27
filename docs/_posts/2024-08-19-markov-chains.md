@@ -39,7 +39,7 @@ Under the hood the CLI uses the `markov` package to generate a "train" of sines 
 
 ```mermaid
   flowchart LR
-    markov.Song --> Ngen --> b & c--> d
+    markov.Song --> Ngen --> freqs & amps & durs --> new train
 ```
 
 ```mermaid
