@@ -25,6 +25,8 @@ version:             2.1.0
 github:
   repo:              https://github.com/bh90210/mlsic
 
+mermaid: true
+
 # Gems
 gems:
   - jekyll-paginate
