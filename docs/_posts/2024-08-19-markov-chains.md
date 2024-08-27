@@ -38,20 +38,27 @@ _Note that to run the program you need to either install `go` or download the bi
 Under the hood the CLI uses the `markov` package to generate a "train" of sines waves. Iteration #1 uses additive synthesis to produce sound. The result is a monophonic synth. Each fundamental is treated for harmonics. Harmonics are read of a corresponding table and for iteration #1 are static and the same for each fundamental. Each generation uses the previous generation model to generate new values for the sine waves. Gen0 uses the seed models.
 
 ```mermaid
-  flowchart LR
-    markov.Song --> Ngen --> freqs & amps & durs --> new train
-```
+flowchart LR
+    a["Ngen"] -->
+    c["freq.json"] --> 
+    d{"Markov Generator"} -->
+    g["`**Create Train**
+    Combine the generated 
+    frequencies, amplitudes and durations to discrete sine structure.`"]
+    a -- Load the models ---
+    e["amp.json"] -->
+    d
+    g
 
-```mermaid
-  erDiagram
-          CUSTOMER }|..|{ DELIVERY-ADDRESS : has
-          CUSTOMER ||--o{ ORDER : places
-          CUSTOMER ||--o{ INVOICE : "liable for"
-          DELIVERY-ADDRESS ||--o{ ORDER : receives
-          INVOICE ||--|{ ORDER : covers
-          ORDER ||--|{ ORDER-ITEM : includes
-          PRODUCT-CATEGORY ||--|{ PRODUCT : contains
-          PRODUCT ||--o{ ORDER-ITEM : "ordered in"
+    
+    a --> 
+    h["dur.json"] -->
+    d
+    g
+
+    g -->
+    k["`**Harmonics**
+    Create harmonics for each sine of the train.`"]
 ```
 
 ### Creating the seed
