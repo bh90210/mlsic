@@ -44,7 +44,7 @@ flowchart TD
     d{"Markov Generator"} -->
     g["`**Create Train**
     Combine the generated 
-    frequencies, amplitudes and durations to discrete sine structure.`"]
+    frequencies, amplitudes and durations to conscutive sines.`"]
     a -- Load the models ---
     e["amp.json"] -->
     d
@@ -59,6 +59,15 @@ flowchart TD
     g -->
     k["`**Harmonics**
     Create harmonics for each sine of the train.`"]
+
+    k -->
+    l["`**Generate Audio**
+    Generate audio signal for fundamentals and partials and add them together.`"]
+
+    l -->
+    p["Generate New Models"]
+
+    p -.-> a;
 ```
 
 ### Creating the seed
