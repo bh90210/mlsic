@@ -46,6 +46,11 @@ Under the hood the CLI uses the `markov` package to generate a "train" of sines 
 ```
 
 ```mermaid
+  flowchart LR
+    Start --> Stop
+```
+
+```mermaid
   erDiagram
           CUSTOMER }|..|{ DELIVERY-ADDRESS : has
           CUSTOMER ||--o{ ORDER : places
