@@ -37,7 +37,13 @@ _Note that to run the program you need to either install `go` or download the bi
 
 Under the hood the CLI uses the `markov` package to generate a "train" of sines waves. Iteration #1 uses additive synthesis to produce sound. The result is a monophonic synth. Each fundamental is treated for harmonics. Harmonics are read of a corresponding table and for iteration #1 are static and the same for each fundamental. Each generation uses the previous generation model to generate new values for the sine waves. Gen0 uses the seed models.
 
-
+```mermaid
+  graph TD;
+      A-->B;
+      A-->C;
+      B-->D;
+      C-->D;
+```
 
 ### Creating the seed
 

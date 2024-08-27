@@ -1,19 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 
-  {% include head.html %}
+{% include head.html %}
 
-  <body>
+<body>
 
-    {% include sidebar.html %}
+	{% include sidebar.html %}
 
-    <div class="container content">
-      <main>
-        {{ content }}
-      </main>
-    </div>
+	<div class="container content">
+		<main>
+			{{ content }}
+		</main>
+	</div>
 
 	{% include open-embed.html %}
 
-  </body>
+</body>
+
+<script>
+	var config = {
+		startOnLoad: true,
+		theme: 'forest',
+		flowchart: {
+			useMaxWidth: false,
+			htmlLabels: true
+		}
+	};
+	mermaid.initialize(config);
+	window.mermaid.init(undefined, document.querySelectorAll('.language-mermaid'));
+</script>
+
 </html>
