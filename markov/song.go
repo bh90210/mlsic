@@ -3,13 +3,17 @@ package markov
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/bh90210/mlsic"
 	"github.com/mb-14/gomarkov"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -40,7 +44,9 @@ func (s *Song) NGen() {
 
 	// Generate a new model and audio output for each generation.
 	for i := 0; i < s.NGenerations; i++ {
-		log.Info().Int("generation", i).Msg("NGen")
+		log.Logger = log.With().Int("gen", i).Logger()
+
+		log.Info().Msg("NGen")
 
 		var freqModel string
 		var ampModel string
@@ -64,7 +70,7 @@ func (s *Song) NGen() {
 			durModel = filepath.Join(s.ModelsPath, "gen"+previousModelsIndex, "dur.json")
 		}
 
-		log.Info().Int("generation", i).Msg("reading files")
+		log.Info().Msg("reading files")
 
 		freq, err := os.ReadFile(freqModel)
 		if err != nil {
@@ -81,7 +87,7 @@ func (s *Song) NGen() {
 			log.Fatal().Err(err).Msg("reading dur")
 		}
 
-		log.Info().Int("generation", i).Msg("creating chains")
+		log.Info().Msg("creating chains")
 
 		// Prepare a Markov Train so we can load the previously created model.
 		t := Train{
@@ -95,47 +101,81 @@ func (s *Song) NGen() {
 		t.Amp.UnmarshalJSON(amp)
 		t.Dur.UnmarshalJSON(dur)
 
-		// Generate new values for frequencies, amplitudes and durations based on previous model.
-		var frequencies model
-		err = json.Unmarshal(freq, &frequencies)
-		if err != nil {
-			log.Fatal().Err(err).Msg("unmarsh freq")
+		var wg sync.WaitGroup
+
+		wg.Add(3)
+
+		var generationFreqs [][]float64
+		var generationAmps [][]float64
+		var generationDurs [][]float64
+
+		for i := 0; i < 3; i++ {
+			go func(i int) {
+				defer wg.Done()
+
+				switch i {
+				case 0:
+					l := log.Logger
+					l = l.With().Str("field", "freq").Logger()
+
+					// Generate new values for frequencies, amplitudes and durations based on previous model.
+					var frequencies model
+					err = json.Unmarshal(freq, &frequencies)
+					if err != nil {
+						l.Fatal().Err(err).Msg("unmarsh freq")
+					}
+
+					l.Info().Msg("entering loop")
+
+					generationFreqs, err = loopMapped(l, frequencies.SpoolMap, t.Freq)
+					if err != nil {
+						l.Fatal().Err(err).Msg("freq loop")
+					}
+
+				case 1:
+					l := log.Logger
+					l = l.With().Str("field", "amp").Logger()
+
+					var amplitudes model
+					err = json.Unmarshal(amp, &amplitudes)
+					if err != nil {
+						l.Fatal().Err(err).Msg("unmarsh amp")
+					}
+
+					l.Info().Msg("entering loop")
+
+					generationAmps, err = loopMapped(l, amplitudes.SpoolMap, t.Amp)
+					if err != nil {
+						l.Fatal().Err(err).Msg("amp loop")
+					}
+
+				case 2:
+					l := log.Logger
+					l = l.With().Str("field", "dur").Logger()
+
+					var durations model
+					err = json.Unmarshal(dur, &durations)
+					if err != nil {
+						l.Fatal().Err(err).Msg("unmarsh dur")
+					}
+
+					l.Info().Msg("entering loop")
+
+					generationDurs, err = loopMapped(l, durations.SpoolMap, t.Dur, true)
+					if err != nil {
+						l.Fatal().Err(err).Msg("dur loop")
+					}
+
+				}
+			}(i)
 		}
 
-		log.Info().Int("generation", i).Str("field", "freq").Msg("entering loop")
+		wg.Wait()
 
-		generationFreqs, err := loopMapped(frequencies.SpoolMap, t.Freq)
-		if err != nil {
-			log.Fatal().Err(err).Msg("freq loop")
-		}
+		// Reset logger to remove "field".
+		log.Logger = log.With().Reset().Logger().With().Int("gen", i).Logger()
 
-		var amplitudes model
-		err = json.Unmarshal(amp, &amplitudes)
-		if err != nil {
-			log.Fatal().Err(err).Msg("unmarsh amp")
-		}
-
-		log.Info().Int("generation", i).Str("field", "amp").Msg("entering loop")
-
-		generationAmps, err := loopMapped(amplitudes.SpoolMap, t.Amp)
-		if err != nil {
-			log.Fatal().Err(err).Msg("amp loop")
-		}
-
-		var durations model
-		err = json.Unmarshal(dur, &durations)
-		if err != nil {
-			log.Fatal().Err(err).Msg("unmarsh dur")
-		}
-
-		log.Info().Int("generation", i).Str("field", "dur").Msg("entering loop")
-
-		generationDurs, err := loopMapped(durations.SpoolMap, t.Dur)
-		if err != nil {
-			log.Fatal().Err(err).Msg("dur loop")
-		}
-
-		log.Info().Int("generation", i).Msg("creating sines train")
+		log.Info().Msg("creating sines train")
 
 		// Create sines train.
 		var train []mlsic.Sine
@@ -159,8 +199,8 @@ func (s *Song) NGen() {
 					amp = generationAmps[i][o]
 				}
 
-				// TODO: 100 is arbitrary, fix it.
-				dur := 100.
+				// TODO: 10 is arbitrary, fix it.
+				dur := 10.
 				if !outOfBoundsDur && !(len(generationDurs[i])-1 < o) {
 					dur = generationDurs[i][o]
 				}
@@ -173,7 +213,7 @@ func (s *Song) NGen() {
 			}
 		}
 
-		log.Info().Int("generation", i).Msg("audio files gen")
+		log.Info().Msg("audio files gen")
 
 		filePath := filepath.Join(s.FilePath, "gen"+index)
 
@@ -185,7 +225,7 @@ func (s *Song) NGen() {
 		// Generate audio based on the new model.
 		Generate(filePath, train, s.Harmonics)
 
-		log.Info().Int("generation", i).Msg("export models")
+		log.Info().Msg("export models")
 
 		// Save the new model.
 		t.Add(train)
@@ -204,41 +244,134 @@ func (s *Song) NGen() {
 	}
 }
 
-func loopMapped(spoolMap any, chain *gomarkov.Chain) ([][]float64, error) {
-	var temporaryTrain [][]float64
-
+func loopMapped(l zerolog.Logger, spoolMap any, chain *gomarkov.Chain, dur ...bool) ([][]float64, error) {
 	mapped := spoolMap.(map[string]interface{})
-	for key := range mapped {
-		if key == "$" || key == "^" || key == "+Inf" {
+
+	// Sort mapped.
+	var sortedMapped []float64
+	for k := range mapped {
+		if k == "$" || k == "^" || k == "+Inf" {
 			continue
 		}
 
-		var temp []float64
-
-		starting := []string{key}
-		// TODO: 100 is arbitrary, fix it.
-		for i := 0; i < 100; i++ {
-			generated, err := chain.Generate(starting)
-			if err != nil {
-				return nil, fmt.Errorf("generated %w %v %v", err, starting, i)
-			}
-
-			if generated == "$" {
-				break
-			}
-
-			flo, err := strconv.ParseFloat(generated, 64)
-			if err != nil {
-				return nil, fmt.Errorf("parse float %w", err)
-			}
-
-			temp = append(temp, flo)
-
-			starting = []string{generated}
+		flo, err := strconv.ParseFloat(k, 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse float %w", err)
 		}
 
-		temporaryTrain = append(temporaryTrain, temp)
+		sortedMapped = append(sortedMapped, flo)
 	}
 
+	slices.Sort(sortedMapped)
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	temporaryTrain := make([][]float64, len(sortedMapped))
+	wg.Add(len(sortedMapped))
+
+	for o, value := range sortedMapped {
+		go func(o int, value float64) {
+			defer wg.Done()
+
+			starting := []string{fmt.Sprintf("%f", value)}
+
+			if len(dur) > 0 {
+				starting = []string{fmt.Sprintf("%.0f", value)}
+			}
+
+			var temp []float64
+			for i := 0; ; i++ {
+				l := l.With().
+					Int("outer iter", o).
+					Int("inner iter", i).
+					Logger()
+
+				generated, err := chain.GenerateDeterministic(starting, rand.New(rand.NewSource(int64(o))))
+				if err != nil {
+					l.Fatal().Err(err).Msg("generating next markov")
+				}
+
+				if generated == "$" {
+					l.Debug().Msg("$")
+					break
+				}
+
+				flo, err := strconv.ParseFloat(generated, 64)
+				if err != nil {
+					l.Fatal().Err(err).Msg("parsing string to float")
+				}
+
+				// Check is we are looping.
+				foundPattern := findPattern(temp, flo)
+				if foundPattern {
+					l.Debug().
+						Str("generated", generated).
+						Msg("loop found")
+					break
+				}
+
+				temp = append(temp, flo)
+
+				starting = []string{generated}
+			}
+
+			mu.Lock()
+			temporaryTrain[o] = temp
+			mu.Unlock()
+
+		}(o, value)
+	}
+
+	wg.Wait()
+
 	return temporaryTrain, nil
+}
+
+func findPattern(temp []float64, flo float64) bool {
+	temp = append(temp, flo)
+
+	if len(temp) < 10 {
+		return false
+	}
+
+	var trackPattern int
+
+	found := make(map[int]bool)
+	for i, v := range temp {
+		for ii, vv := range temp {
+			if i == ii {
+				continue
+			}
+
+			_, ok := found[ii]
+			if ok {
+				continue
+			}
+
+			if v == vv {
+				found[ii] = true
+			}
+		}
+	}
+
+	var foundSorted []int
+	for k := range found {
+		foundSorted = append(foundSorted, k)
+	}
+
+	slices.Sort(foundSorted)
+
+	// i = the length of the slice. When we are at index [1] stop.
+	for i := len(foundSorted) - 1; i > 0; i-- {
+		if foundSorted[i]-foundSorted[i-1] == 1 {
+			trackPattern++
+		}
+	}
+
+	if trackPattern == len(foundSorted)-1 {
+		return true
+	}
+
+	return false
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/rs/zerolog/log"
 
@@ -21,7 +22,9 @@ type Train struct {
 }
 
 // Add .
-func (m *Train) Add(train []mlsic.Sine) {
+func (t *Train) Add(train []mlsic.Sine) {
+	t.nilCheck()
+
 	frequency := []string{}
 	amplitude := []string{}
 	duration := []string{}
@@ -32,14 +35,16 @@ func (m *Train) Add(train []mlsic.Sine) {
 		duration = append(duration, fmt.Sprintf("%v", v.Duration.Milliseconds()))
 	}
 
-	m.Freq.Add(frequency)
-	m.Amp.Add(amplitude)
-	m.Dur.Add(duration)
+	t.Freq.Add(frequency)
+	t.Amp.Add(amplitude)
+	t.Dur.Add(duration)
 }
 
 // Export .
-func (m *Train) Export(path string) error {
-	freq, err := m.Freq.MarshalJSON()
+func (t *Train) Export(path string) error {
+	t.nilCheck()
+
+	freq, err := t.Freq.MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -49,7 +54,7 @@ func (m *Train) Export(path string) error {
 		return err
 	}
 
-	amp, err := m.Amp.MarshalJSON()
+	amp, err := t.Amp.MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -59,7 +64,7 @@ func (m *Train) Export(path string) error {
 		return err
 	}
 
-	dur, err := m.Dur.MarshalJSON()
+	dur, err := t.Dur.MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -72,54 +77,94 @@ func (m *Train) Export(path string) error {
 	return nil
 }
 
+func (t *Train) nilCheck() {
+	if t.Freq == nil {
+		t.Freq = &gomarkov.Chain{}
+	}
+
+	if t.Amp == nil {
+		t.Amp = &gomarkov.Chain{}
+	}
+
+	if t.Dur == nil {
+		t.Dur = &gomarkov.Chain{}
+	}
+}
+
 // Generate .
 func Generate(filepath string, train []mlsic.Sine, h *Harmonics) {
+	// Left channel.
+	leftM := make(map[int][]float64, len(train))
+	// Right channel.
+	rightM := make(map[int][]float64, len(train))
+
+	log.Info().Msg("generating train")
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for i, v := range train {
+		wg.Add(1)
+
+		go func(i int, v mlsic.Sine) {
+			defer wg.Done()
+
+			osc := generator.NewOsc(generator.WaveSine, v.Frequency, 44100)
+			osc.Amplitude = v.Amplitude
+
+			signal := osc.Signal(44 * int(v.Duration.Abs().Milliseconds()))
+
+			for partial, amplitude := range h.Partials {
+				if v.Frequency*float64(partial) > 18000 {
+					continue
+				}
+
+				osc = generator.NewOsc(generator.WaveSine, v.Frequency*float64(partial), 44100)
+
+				amplitude = amplitude + ((amplitude - h.Partials[partial]) / 2)
+				if amplitude < 0 {
+					amplitude *= -1
+				}
+
+				osc.Amplitude = v.Amplitude * amplitude
+
+				partialSignal := osc.Signal(44 * int(v.Duration.Abs().Milliseconds()))
+				for i := range signal {
+					signal[i] += partialSignal[i]
+				}
+			}
+
+			for o, s := range signal {
+				if s >= 1. {
+					signal[o] = 0.
+				} else if s <= -1. {
+					signal[o] = 0.
+				}
+			}
+
+			mu.Lock()
+			leftM[i] = signal
+			rightM[i] = signal
+			mu.Unlock()
+		}(i, v)
+	}
+
+	wg.Wait()
+
 	// Left channel.
 	var left []float64
 	// Right channel.
 	var right []float64
-	for _, v := range train {
-		osc := generator.NewOsc(generator.WaveSine, v.Frequency, 44100)
-		osc.Amplitude = v.Amplitude
-		// osc.SetAttackInMs(10)
 
-		signal := osc.Signal(44 * int(v.Duration.Abs().Milliseconds()))
-
-		for partial, amplitude := range h.Partials {
-			if v.Frequency*float64(partial) > 18000 {
-				continue
-			}
-
-			osc = generator.NewOsc(generator.WaveSine, v.Frequency*float64(partial), 44100)
-
-			amplitude = amplitude + ((amplitude - h.Partials[partial]) / 2)
-			if amplitude < 0 {
-				amplitude *= -1
-			}
-
-			osc.Amplitude = v.Amplitude * amplitude
-			// osc.SetAttackInMs(10)
-
-			partialSignal := osc.Signal(44 * int(v.Duration.Abs().Milliseconds()))
-			for i := range signal {
-				signal[i] += partialSignal[i]
-			}
-		}
-
-		for i, s := range signal {
-			if s >= 1. {
-				signal[i] = 0.
-			} else if s <= -1. {
-				signal[i] = 0.
-			}
-		}
-
-		left = append(left, signal...)
-		right = append(right, signal...)
+	for i := 0; i < len(leftM); i++ {
+		left = append(left, leftM[i]...)
+		right = append(right, rightM[i]...)
 	}
 
 	var music []mlsic.Audio
 	music = append(music, mlsic.Audio(left), mlsic.Audio(right))
+
+	log.Info().Msg("rendering audio files")
 
 	// Render.
 	p := render.Wav{
