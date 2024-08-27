@@ -47,7 +47,7 @@ Under the hood the CLI uses the `markov` package to generate a "train" of sines 
 
 ```mermaid
   flowchart LR
-    Start --> Stop
+    markov.Song --> Ngen
 ```
 
 ```mermaid
@@ -60,7 +60,6 @@ Under the hood the CLI uses the `markov` package to generate a "train" of sines 
           ORDER ||--|{ ORDER-ITEM : includes
           PRODUCT-CATEGORY ||--|{ PRODUCT : contains
           PRODUCT ||--o{ ORDER-ITEM : "ordered in"
-
 ```
 
 ### Creating the seed
