@@ -73,7 +73,9 @@ flowchart TD
     p -.-> a;
 ```
 
+### Composition Strategy
 
+The initial strategy is using Markov Chains  
 
 ### Creating the seed
 
