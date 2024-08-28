@@ -5,7 +5,7 @@ title: Markov chains based strategies for additive synthesis using Go
 
 ## Introduction
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras eu purus congue, pretium tortor eu, semper dui. Cras faucibus pulvinar aliquet. Donec magna tortor, sodales in finibus faucibus, sodales vel justo. Duis condimentum orci eu dapibus pulvinar. Praesent sapien nunc, accumsan sit amet molestie nec, ultrices vitae lacus. Sed sit amet odio in sapien consequat consectetur cursus sit amet felis. Morbi eget rhoncus tellus. Praesent bibendum iaculis est, sed lobortis enim mollis a. Sed eu cursus leo. Quisque sit amet sem mauris. Sed gravida magna vel bibendum pharetra. Aliquam erat volutpat. Praesent mattis magna elementum magna sodales consequat. Praesent vel lorem lectus. Nulla sem dui, ultricies in dolor sed, tincidunt finibus est. Duis a sollicitudin metus, a pulvinar metus. 
+TBD
 
 ## Iteration #1
 
@@ -52,7 +52,6 @@ flowchart TD
     e["amp.json"] -->
     d
     g
-
     
     a --> 
     h["dur.json"] -->
@@ -75,7 +74,7 @@ flowchart TD
 
 ### Composition Strategy
 
-The initial strategy is using Markov Chains  
+The strategy of the first iteration is to use Markov Chains to generate variations of the initial seed. 
 
 ### Creating the seed
 
