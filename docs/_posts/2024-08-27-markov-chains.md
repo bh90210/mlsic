@@ -181,7 +181,9 @@ flowchart TD
 ...`"]
 ```
 
-Once the Sine train is ready 
+At this point we have a monophonic "melody" of consecutive pure sine waves representation. The next step is to generate the audio signal based on them. Along the fundamentals we generate the partials for each and add them together (additive synthesis.) 
+
+The final step is to save the audio files produced, along 
 
 ### Creating the seed
 
