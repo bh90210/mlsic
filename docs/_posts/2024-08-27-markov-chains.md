@@ -134,7 +134,7 @@ flowchart TD
 
 This produces an array of float64 values. Once the subprocess is over the generator is fed the next value of the model `1.000000` and generates a new array of float64 values. The process continues until we fed all values of the model to the generator.
 
-The end result is an array of arrays `[][]float64`. Then the program reads through all generated values for frequencies, amplitudes and durations and creates a train of Sines.
+The end result is three arrays of arrays `[][]float64`. Then the program reads through all generated values for frequencies, amplitudes and durations and creates a train of Sines.
 
 ```golang
 type Sine struct {
@@ -142,6 +142,43 @@ type Sine struct {
 	Amplitude float64
 	Duration  time.Duration
 }
+```
+
+```mermaid
+flowchart TD
+    a["`Freqs
+     [0][0.000000, 1.000000 ...]
+     [1][10.76190, 19.13043 ...]
+     ...`"]
+    b["`Amps 
+     [0][0.510000, 0.350000 ...]
+     [1][0.450000, 0.510000 ...]
+     ...`"]
+    c["`Durs 
+     [0][129, 130 ...]
+     [1][143, 150 ...]
+     ...`"]
+
+    d{Sine Constructor}
+
+    a & b & c --> d
+
+    d --> e
+
+    e["`Sine Train
+    Sine {
+    Frequency: Freqs[0][0],
+	Amplitude: Amps[0][0],
+	Duration: Durs[0][0]}
+    <br>Sine {
+	Frequency: Freqs[0][1],
+	Amplitude: Amps[0][1],
+	Duration: Durs[0][1]}
+    <br>Sine {
+	Frequency: Freqs[0][2],
+	Amplitude: Amps[0][2],
+	Duration: Durs[0][2]}
+...`"]
 ```
 
 ### Creating the seed
