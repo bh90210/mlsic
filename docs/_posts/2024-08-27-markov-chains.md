@@ -208,35 +208,37 @@ The final step is to save the generated audio files and export the new models th
 
 <audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/experiment_1_seed.wav" controls preload></audio>
 
+### The generator
+
 ### Result
 
 <audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/experiment_1_result.wav" controls preload></audio>
 
 #### Limitations
 
-0. Crude seed
+The code so far is very crude and suffers from many limitations. Limitations here are understood as impediments to reaching a richer and/or more controlled audio signal. The list bellow is not exhaustive but will be used as a guide for Experiment #2.
 
-asdasd
+* Crude seed
 
-1. Mono
+The way the algorithm works the initial seed has the biggest influence on the end result regardless of how many generations past it we are.
+The two solutions are a. more complex seeds to begin with, b. a new strategy for combining multiple seeds in the generation process.
 
-asadasd
+* Monophonic
 
-2. Monophonic
+The algorithm produces mono signal (one channel.) We manged to achieve stereo image by combining three mono wav sounds and panning them. Modification are needed to auto generate stereo, quadraphonic audio etc.
 
-asadasd
+* Monophony
 
-3. Static harmonics
+The procedure of the audio signal generation is such that the end result can not be polyphonic. Modification are needed to achieve polyphony.
 
-asadasd
+* Static harmonics
 
-4. Generation sequence
+The same harmonics table is applied to all Sines of the train. A proper strategy is needed for dynamic harmonics.
 
-asadasd
+* Generation sequence
 
-5. Substitutions in Sine Constructor
+As described previously, the Markov Generator is used to produce three arrays of arrays.
 
-asadasd
-
+* Substitutions in Sine Constructor
 
 ## Experiment #2
