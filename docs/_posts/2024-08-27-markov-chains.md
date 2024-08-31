@@ -181,12 +181,27 @@ flowchart TD
 ...`"]
 ```
 
-At this point we have a monophonic "melody" of consecutive pure sine waves representation. The next step is to generate the audio signal based on them. Along the fundamentals we generate the partials for each and add them together (additive synthesis.) 
+At this point we have a representation of monophonic consecutive pure sine waves. The next step is to generate the audio signal based on them. Along the fundamentals we generate the partials for each and add them together.
 
-The final step is to save the audio files produced, along 
+```
+2 0.02
+3 0.03
+4 0.04
+5 0.05
+6 0.06
+7 0.07
+8 0.08
+9 0.09
+10 0.1
+11 0.11
+12 0.12
+...
+```
+_Excerpt of the harmonics table. First column is the partial (the 2nd, the 3rd etc) and the second column is the amplitude of the partial._
+
+The final step is to save the generated audio files and export the new models that will be used as seeds for the next n generation.
 
 ### Creating the seed
 
-Blah blah.
 
 <audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/50.wav" controls preload></audio>
