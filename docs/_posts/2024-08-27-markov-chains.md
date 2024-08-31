@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Markov chains based strategies for additive synthesis using Go
+toc: true
 ---
 
 ## Introduction
