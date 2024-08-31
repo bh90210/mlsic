@@ -3,6 +3,9 @@ layout: post
 title: Markov chains based strategies for additive synthesis using Go
 ---
 
+* TOC
+{:toc}
+
 ## Introduction
 
 TBD
