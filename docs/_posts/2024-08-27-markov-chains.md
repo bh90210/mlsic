@@ -212,10 +212,31 @@ The final step is to save the generated audio files and export the new models th
 
 <audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/experiment_1_result.wav" controls preload></audio>
 
-### Conclusion
-
 #### Limitations
 
-#### Things to change
+0. Crude seed
+
+asdasd
+
+1. Mono
+
+asadasd
+
+2. Monophonic
+
+asadasd
+
+3. Static harmonics
+
+asadasd
+
+4. Generation sequence
+
+asadasd
+
+5. Substitutions in Sine Constructor
+
+asadasd
+
 
 ## Experiment #2
