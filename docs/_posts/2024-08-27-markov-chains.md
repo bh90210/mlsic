@@ -237,8 +237,10 @@ The same harmonics table is applied to all Sines of the train. A proper strategy
 
 * Generation sequence
 
-As described previously, the Markov Generator is used to produce three arrays of arrays.
+Each model's values are sorted (see _Sample values from the seed freq.json model._ above.) For example value `0.000000` is fed to the Markov Generator. When the process finishes value `1.000000` is fed and so on. This has profound effect on the audio signal generated. A new strategy is needed to make this process more dynamic.
 
 * Substitutions in Sine Constructor
+
+As described previously, the Markov Generator is used to produce three arrays of arrays. Those are fed to the Sine Constructor. At the moment Constructor favours heavily the generated result of frequencies. This happens in two major ways. When a frequencies sub array (eg. `Freqs[0]`) reaches the end, it ignores the remaining amplitudes and durations arrays (if any.) While reading the `Freqs[0]` sub array if `len(Freqs[0] > len(Amps[0])`, that is there are no corresponding amplitude value for the next frequency of the Sine Train, hardcoded default value 0. is used (no sound signal.) Same applies for duration, default hard coded value when there are no duration value left is 10 milliseconds.
 
 ## Experiment #2
