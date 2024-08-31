@@ -204,11 +204,11 @@ _Excerpt of the harmonics table. First column is the partial (the 2nd, the 3rd e
 
 The final step is to save the generated audio files and export the new models that will be used as seeds for the next n generation.
 
-### Creating the seed
+### Seed
 
 <audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/experiment_1_seed.wav" controls preload></audio>
 
-### The generator
+### Markov Generator
 
 ### Result
 
