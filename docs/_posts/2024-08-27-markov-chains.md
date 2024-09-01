@@ -135,9 +135,9 @@ flowchart TD
     ...`"]
 ```
 
-This produces an array of float64 values. Once the subprocess is over the generator is fed the next value of the model `1.000000` and generates a new array of float64 values. The process continues until we fed all values of the model to the generator.
+This produces an array of float values. Once the subprocess is over the generator is fed the next value of the model `1.000000` and generates a new array of float values. The process continues until we fed all values of the model to the generator.
 
-The end result is three arrays of arrays `[][]float64`. Then the program reads through all generated values of frequencies, amplitudes and durations and creates a train of Sines.
+The end result is three arrays of arrays `[][]float`. Then the program reads through all generated values of frequencies, amplitudes and durations and creates a train of Sines.
 
 ```golang
 type Sine struct {
@@ -200,7 +200,7 @@ At this point we have a representation of monophonic consecutive pure sine waves
 12 0.12
 ...
 ```
-_Excerpt of the harmonics table. First column is the partial (the 2nd, the 3rd etc) and the second column is the amplitude of the partial._
+_Excerpt of the harmonics table. First column is the partial (the 2nd, the 3rd etc) and the second column is the factor to multiply against the fundamental amplitude to derive the amplitude of the partial._
 
 The final step is to save the generated audio files and export the new models that will be used as seeds for the next n generation.
 
@@ -208,7 +208,9 @@ The final step is to save the generated audio files and export the new models th
 
 <audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/experiment_1_seed.wav" controls preload></audio>
 
-### Markov Generator
+
+
+### Generator
 
 ### Result
 
@@ -225,7 +227,7 @@ The two solutions are a. more complex seeds to begin with, b. a new strategy for
 
 * Monophonic
 
-The algorithm produces mono signal (one channel.) We manged to achieve stereo image by combining three mono wav sounds and panning them. Modification are needed to auto generate stereo, quadraphonic audio etc.
+The algorithm produces mono signal (one channel.) We managed to achieve stereo image by combining three generations and panning them. Modification are needed to auto generate stereo, quadraphonic audio etc.
 
 * Monophony
 
@@ -241,6 +243,6 @@ Each model's values are sorted (see _Sample values from the seed freq.json model
 
 * Substitutions in Sine Constructor
 
-As described previously, the Markov Generator is used to produce three arrays of arrays. Those are fed to the Sine Constructor. At the moment Constructor favours heavily the generated result of frequencies. This happens in two major ways. When a frequencies sub array (eg. `Freqs[0]`) reaches the end, it ignores the remaining amplitudes and durations arrays (if any.) While reading the `Freqs[0]` sub array if `len(Freqs[0] > len(Amps[0])`, that is there are no corresponding amplitude value for the next frequency of the Sine Train, hardcoded default value 0. is used (no sound signal.) Same applies for duration, default hard coded value when there are no duration value left is 10 milliseconds.
+As described previously, the Markov Generator is used to produce three arrays of arrays. Those are fed to the Sine Constructor. At the moment Constructor favours heavily the generated result of frequencies. This happens in two major ways. When a frequencies sub array (eg. `Freqs[0]`) reaches the end, it ignores the remaining amplitudes and durations arrays (if any.) While reading the `Freqs[0]` sub array if `len(Freqs[0] > len(Amps[0])`, that is there is no corresponding amplitude value for the next frequency of the Sine Train, hardcoded default value 0 is used (no signal.) Same applies for duration, default hard coded value when there are no duration value left is 10 milliseconds.
 
 ## Experiment #2
