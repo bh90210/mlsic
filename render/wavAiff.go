@@ -26,16 +26,24 @@ type Wav struct {
 
 // Render accepts a slice of audio.PCMBuffer and creates out of each one of them a mono
 // .wav file named /path/to/file/0.wav for the first channel, /path/to/file/1.wav for the second etc.
-func (w *Wav) Render(sources []mlsic.Audio) error {
+// If a filename is provided then the resulting file is /path/to/file/name0.wav.
+func (w *Wav) Render(source []mlsic.Audio, name string) error {
 	var wg sync.WaitGroup
 
-	for i, source := range sources {
+	for i, source := range source {
 		wg.Add(1)
 
 		go func(i int, source mlsic.Audio) {
 			defer wg.Done()
 
-			f, err := os.Create(filepath.Join(w.Filepath, fmt.Sprintf("%v.wav", i)))
+			var path string
+			if name == "" {
+				path = filepath.Join(w.Filepath, fmt.Sprintf("%v.wav", i))
+			} else {
+				path = filepath.Join(w.Filepath, fmt.Sprintf("%s%v.wav", name, i))
+			}
+
+			f, err := os.Create(path)
 			if err != nil {
 				log.Fatal().Err(err).Int("file", i).Msg("creating file")
 			}

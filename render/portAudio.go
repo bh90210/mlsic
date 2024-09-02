@@ -57,7 +57,7 @@ func NewPortAudio(opts ...PortAudioOption) (pa *PortAudio, err error) {
 }
 
 // Render will render for as many channels as len(pcmBuffer).
-func (p *PortAudio) Render(a []mlsic.Audio) error {
+func (p *PortAudio) Render(a []mlsic.Audio, _ string) error {
 	defer portaudio.Terminate()
 
 	parameters := portaudio.StreamParameters{

@@ -69,7 +69,7 @@ func TestWavRenderer(t *testing.T) {
 
 			tc.wav.Filepath = filePath
 
-			err = tc.wav.Render(tc.signal)
+			err = tc.wav.Render(tc.signal, "")
 			a.NoError(err)
 
 			for i := 0; i < len(tc.signal); i++ {

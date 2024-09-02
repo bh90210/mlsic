@@ -215,15 +215,15 @@ func (s *Song) NGen() {
 
 		log.Info().Msg("audio files gen")
 
-		filePath := filepath.Join(s.FilePath, "gen"+index)
+		// filePath := filepath.Join(s.FilePath, "gen"+index)
 
-		err = os.MkdirAll(filePath, 0755)
+		err = os.MkdirAll(s.FilePath, 0755)
 		if err != nil {
 			log.Fatal().Err(err).Msg("creating audio directory")
 		}
 
 		// Generate audio based on the new model.
-		Generate(filePath, train, s.Harmonics)
+		Generate(s.FilePath, train, s.Harmonics, i)
 
 		log.Info().Msg("export models")
 

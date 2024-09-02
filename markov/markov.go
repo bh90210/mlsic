@@ -92,7 +92,7 @@ func (t *Train) nilCheck() {
 }
 
 // Generate .
-func Generate(filepath string, train []mlsic.Sine, h *Harmonics) {
+func Generate(filepath string, train []mlsic.Sine, h *Harmonics, ngen int) {
 	// Left channel.
 	leftM := make(map[int][]float64, len(train))
 	// Right channel.
@@ -162,7 +162,7 @@ func Generate(filepath string, train []mlsic.Sine, h *Harmonics) {
 	}
 
 	var music []mlsic.Audio
-	music = append(music, mlsic.Audio(left), mlsic.Audio(right))
+	music = append(music, mlsic.Audio(left))
 
 	log.Info().Msg("rendering audio files")
 
@@ -176,7 +176,7 @@ func Generate(filepath string, train []mlsic.Sine, h *Harmonics) {
 	// 	log.Fatal().Err(err)
 	// }
 
-	if err := p.Render(music); err != nil {
+	if err := p.Render(music, fmt.Sprintf("ngen%v", ngen)); err != nil {
 		log.Fatal().Err(err)
 	}
 }

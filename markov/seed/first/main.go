@@ -412,7 +412,7 @@ func main() {
 		Filepath: *filesPath,
 	}
 
-	if err := p.Render(music); err != nil {
+	if err := p.Render(music, "seed"); err != nil {
 		log.Fatal().Err(err).Msg("rendering")
 	}
 }

@@ -18,7 +18,7 @@ type Writer interface {
 
 // Renderer .
 type Renderer interface {
-	Render([]Audio) error
+	Render(source []Audio, name string) error
 }
 
 // Sine .
