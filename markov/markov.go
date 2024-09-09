@@ -14,15 +14,15 @@ import (
 	"github.com/mb-14/gomarkov"
 )
 
-// Train .
-type Train struct {
+// Models .
+type Models struct {
 	Freq *gomarkov.Chain
 	Amp  *gomarkov.Chain
 	Dur  *gomarkov.Chain
 }
 
 // Add .
-func (t *Train) Add(train []mlsic.Sine) {
+func (t *Models) Add(train []mlsic.Sine) {
 	t.nilCheck()
 
 	frequency := []string{}
@@ -41,7 +41,7 @@ func (t *Train) Add(train []mlsic.Sine) {
 }
 
 // Export .
-func (t *Train) Export(path string) error {
+func (t *Models) Export(path string) error {
 	t.nilCheck()
 
 	freq, err := t.Freq.MarshalJSON()
@@ -77,7 +77,7 @@ func (t *Train) Export(path string) error {
 	return nil
 }
 
-func (t *Train) nilCheck() {
+func (t *Models) nilCheck() {
 	if t.Freq == nil {
 		t.Freq = &gomarkov.Chain{}
 	}
@@ -90,6 +90,17 @@ func (t *Train) nilCheck() {
 		t.Dur = &gomarkov.Chain{}
 	}
 }
+
+// Train .
+type Train map[int]mlsic.Sine
+
+// O .
+func (t *Models) O() {
+
+}
+
+// Trains .
+type Trains map[int]Train
 
 // Generate .
 func Generate(filepath string, train []mlsic.Sine, h *Harmonics, ngen int) {

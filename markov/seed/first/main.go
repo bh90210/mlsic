@@ -30,7 +30,7 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	m := markov.Train{
+	m := markov.Models{
 		Freq: gomarkov.NewChain(1),
 		Amp:  gomarkov.NewChain(1),
 		Dur:  gomarkov.NewChain(1),

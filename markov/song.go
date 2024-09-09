@@ -90,7 +90,7 @@ func (s *Song) NGen() {
 		log.Info().Msg("creating chains")
 
 		// Prepare a Markov Train so we can load the previously created model.
-		t := Train{
+		t := Models{
 			Freq: gomarkov.NewChain(1),
 			Amp:  gomarkov.NewChain(1),
 			Dur:  gomarkov.NewChain(1),

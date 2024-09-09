@@ -3,6 +3,15 @@ package mlsic
 
 import "time"
 
+// SampleRate .
+const SampleRate = 44100
+
+// MaxFrequency .
+const MaxFrequency = 18000
+
+// SignalLengthMultiplier .
+const SignalLengthMultiplier = 44
+
 // Audio is a 64 bit float slice with PCM signal values from -1.0 to 1.0.
 type Audio []float64
 
@@ -26,4 +35,9 @@ type Sine struct {
 	Frequency float64
 	Amplitude float64
 	Duration  time.Duration
+}
+
+// Scale .
+func Scale(unscaledNum, minAllowed, maxAllowed, min, max float64) float64 {
+	return (maxAllowed-minAllowed)*(unscaledNum-min)/(max-min) + minAllowed
 }

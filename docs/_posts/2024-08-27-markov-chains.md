@@ -12,7 +12,9 @@ TBD
 
 ## Experiment #1
 
-The first experiment that reached some level of stability is a small command line program that generates audio based on markov chains models. It has five available flags. `-debug` to enable debug logging - useful while developing, `-ngen` the number of successive generations to generate, `-files` the directory to save the audio files of each generation, `-models` the directory to save the generated markov chains models and `-seed` the seed markov chain models to kick start the process.
+The first iteration should be considered, to borrow a software world term, a proof of concept. There was not a thoughtful process behind the aesthetics of the produced sounds but rather the focus was to come up with a working strategy of generating them. Further experiments will address the shortcomings of the first one.
+
+Experiment #1 comes in the form of a small command line program that generates audio based on markov chains models. It has five available flags. `-debug` to enable debug logging - useful while developing, `-ngen` the number of successive generations to generate, `-files` the directory to save the audio files of each generation, `-models` the directory to save the generated markov chains models and `-seed` the seed markov chain models to kick start the process.
 
 Running it produces folders containing the generated audio and the Markov chain models used for the generation in json format.
 
@@ -135,7 +137,7 @@ flowchart TD
     ...`"]
 ```
 
-This produces an array of float values. Once the subprocess is over the generator is fed the next value of the model `1.000000` and generates a new array of float values. The process continues until we fed all values of the model to the generator.
+This produces an array of float values. Once the subprocess is over the generator is fed the next value of the model `1.000000` and generates a new array of float values. The process continues until we feed all values of the model to the generator.
 
 The end result is three arrays of arrays `[][]float`. Then the program reads through all generated values of frequencies, amplitudes and durations and creates a train of Sines.
 
