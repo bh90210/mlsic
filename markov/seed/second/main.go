@@ -37,7 +37,7 @@ func main() {
 	}
 
 	// Seed composition generation.
-	trains := seed.MelodyTrain()
+	poly := seed.MelodyTrain()
 
 	// Save seed model.
 	err := m.Export(*modelsPath)
@@ -45,7 +45,7 @@ func main() {
 		log.Fatal().Err(err).Msg("exporting models")
 	}
 
-	left, right := seed.DeconstructTrains(trains)
+	left, right := seed.DeconstructTrains(poly)
 
 	var music []mlsic.Audio
 	music = append(music, left, right)
