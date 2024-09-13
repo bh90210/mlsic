@@ -13,6 +13,12 @@ import (
 	"github.com/bh90210/mlsic/markov"
 )
 
+// MaximumPartialStartingPoint .
+const MaximumPartialStartingPoint = 1000
+
+// MinimumPartialDuration .
+const MinimumPartialDuration = 10
+
 // MelodyTrain .
 // func MelodyTrain() [][]mlsic.Sine {
 func MelodyTrain() markov.Trains {
@@ -20,98 +26,105 @@ func MelodyTrain() markov.Trains {
 
 	trains := make(markov.Trains, 0)
 
-	// Random.
-	// for i := 0; i < 10; i++ {
-	// 	r := rand.Float64()
-	// 	train = append(train, []mlsic.Sine{
-	// 		{
-	// 			Frequency: mlsic.Scale(r, 80, 500, 0., 1.),
-	// 			Amplitude: mlsic.Scale(r, 0., 1., 0., 0.5),
-	// 			Duration:  time.Duration(mlsic.Scale(r, 15, 150, 0., 1.)) * time.Millisecond,
-	// 		},
-	// 	})
-	// }
-
 	// Manual .
 	trains[0] = make(markov.Train)
 
-	trains[0][0] = mlsic.Sine{
-		Frequency: 500,
-		Amplitude: 0.49,
-		Duration:  time.Duration(250 * time.Millisecond),
+	trains[0][0] = markov.TrainContents{
+		Sine: mlsic.Sine{
+			Frequency: 500,
+			Amplitude: 0.49,
+			Duration:  time.Duration(20 * time.Millisecond),
+		},
+		Panning: 0.5,
 	}
 
 	var prev int
 
-	prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
+	prev += int(trains[prev][0].Sine.Duration.Abs().Milliseconds()) *
 		mlsic.SignalLengthMultiplier
 
 	trains[prev] = make(markov.Train)
 
-	trains[prev][0] = mlsic.Sine{
-		Frequency: 150,
-		Amplitude: 0.79,
-		Duration:  time.Duration(250 * time.Millisecond),
+	trains[prev][0] = markov.TrainContents{
+		Sine: mlsic.Sine{
+			Frequency: 350,
+			Amplitude: 0.4,
+			Duration:  time.Duration(250 * time.Millisecond),
+		},
+		Panning: 0.5,
 	}
 
-	prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
-		mlsic.SignalLengthMultiplier
+	// prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
+	// 	mlsic.SignalLengthMultiplier
 
-	trains[prev] = make(markov.Train)
+	// trains[prev] = make(markov.Train)
 
-	trains[prev][0] = mlsic.Sine{
-		Frequency: 250,
-		Amplitude: 0.69,
-		Duration:  time.Duration(150 * time.Millisecond),
-	}
+	// trains[prev][0] = mlsic.Sine{
+	// 	Frequency: 250,
+	// 	Amplitude: 0.69,
+	// 	Duration:  time.Duration(150 * time.Millisecond),
+	// }
 
-	for i := 20; i > 0; i-- {
-		prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
-			mlsic.SignalLengthMultiplier
+	// for i := 20; i > 0; i-- {
+	// 	prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
+	// 		mlsic.SignalLengthMultiplier
 
-		trains[prev] = make(markov.Train)
+	// 	trains[prev] = make(markov.Train)
 
-		trains[prev][0] = mlsic.Sine{
-			Frequency: 2500 + float64(i),
-			Amplitude: 1. * float64(i) * 0.045,
-			Duration:  time.Duration(130. * time.Millisecond),
-		}
-	}
+	// 	trains[prev][0] = mlsic.Sine{
+	// 		Frequency: 2500 + float64(i),
+	// 		Amplitude: 1. * float64(i) * 0.045,
+	// 		Duration:  time.Duration(130. * time.Millisecond),
+	// 	}
+	// }
 
-	prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
-		mlsic.SignalLengthMultiplier
+	// prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
+	// 	mlsic.SignalLengthMultiplier
 
-	trains[prev] = make(markov.Train)
+	// trains[prev] = make(markov.Train)
 
-	trains[prev][0] = mlsic.Sine{
-		Frequency: 500,
-		Amplitude: 0.5,
-		Duration:  time.Duration(180 * time.Millisecond),
-	}
+	// trains[prev][0] = mlsic.Sine{
+	// 	Frequency: 500,
+	// 	Amplitude: 0.5,
+	// 	Duration:  time.Duration(180 * time.Millisecond),
+	// }
 
-	for i := 99; i > 0; i-- {
+	// for i := 99; i > 0; i-- {
 
-		prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
-			mlsic.SignalLengthMultiplier
+	// 	prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
+	// 		mlsic.SignalLengthMultiplier
 
-		trains[prev] = make(markov.Train)
+	// 	trains[prev] = make(markov.Train)
 
-		f := 100 + float64(i)
-		a := float64(i) * 0.0009
+	// 	f := 100 + float64(i)
+	// 	a := float64(i) * 0.009
 
-		trains[prev][0] = mlsic.Sine{
-			Frequency: f,
-			Amplitude: a,
-			Duration:  time.Duration(24. * time.Millisecond),
-		}
-	}
+	// 	trains[prev][0] = mlsic.Sine{
+	// 		Frequency: f,
+	// 		Amplitude: a,
+	// 		Duration:  time.Duration(24. * time.Millisecond),
+	// 	}
+	// }
+
+	// // Random.
+	// for i := 0; i < 5; i++ {
+	// 	prev += int(trains[prev][0].Duration.Abs().Milliseconds()) *
+	// 		mlsic.SignalLengthMultiplier
+
+	// 	trains[prev] = make(markov.Train)
+
+	// 	r := rand.Float64()
+	// 	trains[prev][0] = mlsic.Sine{
+	// 		Frequency: mlsic.Scale(r, 80, 500, 0., 1.),
+	// 		Amplitude: mlsic.Scale(r, 0., 1., 0., 0.5) / 2,
+	// 		Duration:  time.Duration(mlsic.Scale(r, 15, 150, 0., 1.)) * 2 * time.Millisecond,
+	// 	}
+	// }
 
 	// Harmonics .
 	var h harmonics
 	h.partialsGeneration(trains)
-	// fmt.Println(trains)
-	// fmt.Printf("%+v", trains)
-	// os.Exit(0)
+
 	return trains
 }
 
@@ -142,7 +155,7 @@ func (h *harmonics) gen() {
 		h.partials2[i] = 0
 
 		if big.NewInt(int64(i)).ProbablyPrime(0) {
-			h.partials2[i] = 0.01 * float64(i)
+			h.partials2[i] = 0.001 * float64(i)
 		}
 	}
 }
@@ -159,16 +172,18 @@ func (h *harmonics) partialsGeneration(trains markov.Trains) {
 		patrialsTrains[trainIndex] = make(markov.Train)
 
 		for partial, amplitude := range h.partials1 {
-
-			freq := sine.Frequency * float64(partial)
-
+			freq := sine.Sine.Frequency * float64(partial)
 			if freq > mlsic.MaxFrequency {
 				continue
 			}
 
 			var partialIndex int
 			for {
-				partialIndex = rand.IntN(1000)
+				// TODO: this number determines the time in milliseconds the particular partial will start.
+				// This is fundamental starting time + offset for the partial.
+				// Number 500 meaning a partial can start up to half a second after the fundamental
+				// is arbitrary. Fix it!
+				partialIndex = rand.IntN(MaximumPartialStartingPoint)
 				if partialIndex != 0 {
 					if _, ok := patrialsTrains[trainIndex][partialIndex]; ok {
 						continue
@@ -178,14 +193,20 @@ func (h *harmonics) partialsGeneration(trains markov.Trains) {
 				}
 			}
 
-			l := mlsic.SignalLengthMultiplier * int(sine.Duration.Abs().Milliseconds())
+			l := mlsic.SignalLengthMultiplier * int(sine.Sine.Duration.Abs().Milliseconds())
 			l -= partialIndex
 			l /= mlsic.SignalLengthMultiplier
 
-			patrialsTrains[trainIndex][partialIndex] = mlsic.Sine{
-				Frequency: freq,
-				Amplitude: sine.Amplitude * amplitude,
-				Duration:  time.Duration(l * int(time.Millisecond)),
+			if l == 0 {
+				l = MinimumPartialDuration
+			}
+
+			patrialsTrains[trainIndex][partialIndex] = markov.TrainContents{
+				Sine: mlsic.Sine{
+					Frequency: freq,
+					Amplitude: sine.Sine.Amplitude * amplitude,
+					Duration:  time.Duration(l * int(time.Millisecond)),
+				},
 			}
 		}
 	}
@@ -215,7 +236,7 @@ func DeconstructTrains(trains markov.Trains) (mlsic.Audio, mlsic.Audio) {
 		}
 	}
 
-	length += int(trains[length][0].Duration.Abs().Milliseconds() * mlsic.SignalLengthMultiplier)
+	length += int(trains[length][0].Sine.Duration.Abs().Milliseconds() * mlsic.SignalLengthMultiplier)
 
 	// Order trains map.
 	trainKeys := make([]int, 0)
@@ -225,21 +246,19 @@ func DeconstructTrains(trains markov.Trains) (mlsic.Audio, mlsic.Audio) {
 
 	sort.Ints(trainKeys)
 
-	left := make([]float64, length)
-	right := make([]float64, length)
+	left := make([]float64, length+MaximumPartialStartingPoint+MinimumPartialDuration)
+	right := make([]float64, length+MaximumPartialStartingPoint+MinimumPartialDuration)
 
 	var previousSignalEnd int
-
 	for _, i := range trainKeys {
 		var signal []float64
 		var fundamentalSignalEnd int
 
-		for sineIndex, sine := range trains[i] {
-			osc := generator.NewOsc(generator.WaveSine, sine.Frequency, mlsic.SampleRate)
-			osc.Amplitude = sine.Amplitude
+		for sineIndex, trainContent := range trains[i] {
+			osc := generator.NewOsc(generator.WaveSine, trainContent.Sine.Frequency, mlsic.SampleRate)
+			osc.Amplitude = trainContent.Sine.Amplitude
 
-			sineSignal := osc.Signal(mlsic.SignalLengthMultiplier * int(sine.Duration.Abs().Milliseconds()))
-
+			sineSignal := osc.Signal(mlsic.SignalLengthMultiplier * int(trainContent.Sine.Duration.Abs().Milliseconds()))
 			sineSignalEnd := trimToZero(sineSignal)
 
 			// If we are dealing with the fundamental take note where it ends.

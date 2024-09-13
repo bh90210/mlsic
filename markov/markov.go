@@ -91,17 +91,6 @@ func (t *Models) nilCheck() {
 	}
 }
 
-// Train .
-type Train map[int]mlsic.Sine
-
-// O .
-func (t *Models) O() {
-
-}
-
-// Trains .
-type Trains map[int]Train
-
 // Generate .
 func Generate(filepath string, train []mlsic.Sine, h *Harmonics, ngen int) {
 	// Left channel.
@@ -190,4 +179,19 @@ func Generate(filepath string, train []mlsic.Sine, h *Harmonics, ngen int) {
 	if err := p.Render(music, fmt.Sprintf("ngen%v", ngen)); err != nil {
 		log.Fatal().Err(err)
 	}
+}
+
+// Train fundamental and partials.
+type Train map[int]TrainContents
+
+// Trains is a single voice (monophony) from start to finish.
+type Trains map[int]Train
+
+// Poly each slice is a different poly voice.
+type Poly []Trains
+
+// TrainContents .
+type TrainContents struct {
+	Sine    mlsic.Sine
+	Panning float64
 }
