@@ -335,16 +335,13 @@ func DeconstructTrains(poly markov.Poly, noOfSpeakers int) ([]mlsic.Audio, error
 								trainContent.Panning > (speakerMid-speakerWidth):
 								panning = 1 - mlsic.Scale(speakerMid-trainContent.Panning, 0., 1., 0., speakerWidth)
 
-							case speakerNumber == 1 &&
+							case speakerNumber == 0 &&
 								trainContent.Panning > speakerMid+(speakerWidth*float64(noOfSpeakers-1)):
 								panning = mlsic.Scale(trainContent.Panning-(speakerMid+(speakerWidth*float64(noOfSpeakers-1))), 0., 1., 0., speakerWidth)
 
 							case speakerNumber == noOfSpeakers &&
 								trainContent.Panning < speakerWidth/2:
 								panning = mlsic.Scale((speakerWidth/2)-trainContent.Panning, 0., 1., 0., speakerWidth)
-
-							default:
-								// log.Fatal().Any("yo", trainContent.Sine).Float64("panning", trainContent.Panning).Int("speaker", speakerNumber).Msg("yo")
 							}
 						}
 
