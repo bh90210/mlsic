@@ -45,12 +45,14 @@ func main() {
 		log.Fatal().Err(err).Msg("exporting models")
 	}
 
-	left, right := seed.DeconstructTrains(poly)
+	channels, err := seed.DeconstructTrains(poly, 2)
+	if err != nil {
+		log.Fatal().Err(err).Msg("deconstructing trains")
+	}
 
 	var music []mlsic.Audio
-	music = append(music, left, right)
+	music = append(music, channels...)
 
-	// Render audio as .wav files.
 	p, _ := render.NewPortAudio()
 	fmt.Println(*filesPath)
 
@@ -58,6 +60,7 @@ func main() {
 		log.Fatal().Err(err).Msg("rendering")
 	}
 
+	// Render audio as .wav files.
 	pp := render.Wav{
 		Filepath: *filesPath,
 	}

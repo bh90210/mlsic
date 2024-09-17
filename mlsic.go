@@ -12,6 +12,15 @@ const MaxFrequency = 18000
 // SignalLengthMultiplier .
 const SignalLengthMultiplier = 44
 
+const (
+	OneSpeaker         = 1
+	TwoSpeakers        = 2
+	SpeakerOne         = 0
+	SpeakerTwo         = 1
+	speakersMinPanning = 0
+	speakersMaxPanning = 1
+)
+
 // Audio is a 64 bit float slice with PCM signal values from -1.0 to 1.0.
 type Audio []float64
 
