@@ -1,9 +1,11 @@
 package markov
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"github.com/rs/zerolog/log"
@@ -194,4 +196,216 @@ type Poly []Trains
 type TrainContents struct {
 	Sine    mlsic.Sine
 	Panning float64
+}
+
+// MaximumPartialStartingPoint .
+const MaximumPartialStartingPoint = 1000
+
+// MinimumPartialDuration .
+const MinimumPartialDuration = 10
+
+// ErrNotEnoughSpeakers .
+var ErrNotEnoughSpeakers = errors.New("allowed number of speakers is 1+")
+
+// DeconstructTrains .
+func DeconstructTrains(poly Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
+	if noOfSpeakers < 1 {
+		return nil, ErrNotEnoughSpeakers
+	}
+
+	speakers := make([]mlsic.Audio, noOfSpeakers)
+
+	for _, voiceTrains := range poly {
+		// Determine the total trains length.
+		var length int
+		for k := range voiceTrains {
+			if length < k {
+				length = k
+			}
+		}
+
+		length += int(voiceTrains[length][0].Sine.Duration.Abs().Milliseconds() * mlsic.SignalLengthMultiplier)
+
+		// Order trains map.
+		trainKeys := make([]int, 0)
+		for k := range voiceTrains {
+			trainKeys = append(trainKeys, k)
+		}
+
+		sort.Ints(trainKeys)
+
+		speakersSignals := make([][]float64, noOfSpeakers)
+		for i := range speakersSignals {
+			speakersSignals[i] = make([]float64, length+MaximumPartialStartingPoint+MinimumPartialDuration)
+		}
+
+		var previousSignalEnd int
+		for _, i := range trainKeys {
+			signal := make([][]float64, noOfSpeakers)
+
+			var fundamentalSignalEnd int
+			for sineIndex, trainContent := range voiceTrains[i] {
+				osc := generator.NewOsc(generator.WaveSine, trainContent.Sine.Frequency, mlsic.SampleRate)
+				osc.Amplitude = trainContent.Sine.Amplitude
+
+				sineSignal := osc.Signal(mlsic.SignalLengthMultiplier * int(trainContent.Sine.Duration.Abs().Milliseconds()))
+				sineSignalEnd := trimToZero(sineSignal)
+
+				// If we are dealing with the fundamental take note where it ends.
+				if sineIndex == 0 {
+					fundamentalSignalEnd = len(sineSignal) - sineSignalEnd
+				}
+
+				// TODO: This is crude, fix it.
+				// Prevent audio clipping.
+				for p, s := range sineSignal {
+					if s >= 1. {
+						sineSignal[p] = 0.
+					} else if s <= -1. {
+						sineSignal[p] = 0.
+					}
+				}
+
+				// Append empty values to signal if signal is shorter than needed.
+				for o := 0; o < noOfSpeakers; o++ {
+					if len(signal[o]) < len(sineSignal[:sineSignalEnd])+sineIndex {
+						signal[o] = append(signal[o], make([]float64, len(sineSignal[:sineSignalEnd])+sineIndex-len(signal[o]))...)
+					}
+				}
+
+				for o, v := range sineSignal[:sineSignalEnd] {
+					// Panning.
+					for speakerNumber := 0; speakerNumber < noOfSpeakers; speakerNumber++ {
+						var panning float64
+
+						switch noOfSpeakers {
+						// Mono.
+						case mlsic.OneSpeaker:
+							panning = 1
+
+						// Stereo.
+						case mlsic.TwoSpeakers:
+							switch speakerNumber {
+							// Left.
+							case mlsic.SpeakerOne:
+								panning = 1 - trainContent.Panning
+
+							// Right.
+							case mlsic.SpeakerTwo:
+								panning = trainContent.Panning
+							}
+
+						// Three and more speakers.
+						default:
+							// Find the width of individual speaker.
+							speakerWidth := 1. / float64(noOfSpeakers)
+							// Find the max width value of current speaker.
+							speakerMax := speakerWidth * float64((speakerNumber))
+							// Find the min width value of current speaker.
+							speakerMin := speakerMax - speakerWidth
+							// Find current speaker's mid point.
+							speakerMid := speakerMin + (speakerWidth / 2)
+
+							switch {
+							// If the panning value is within the width of this speaker and
+							// above or below speaker's mid.
+							case trainContent.Panning >= speakerMin &&
+								trainContent.Panning <= speakerMax:
+
+								if trainContent.Panning == speakerMid {
+									panning = 1
+								}
+
+								if trainContent.Panning < speakerMid {
+									panning = 1 - mlsic.Scale(speakerMid-trainContent.Panning, 0., 1., 0., speakerWidth)
+								}
+
+								if trainContent.Panning > speakerMid {
+									panning = mlsic.Scale(trainContent.Panning-speakerMid, 0., 1., 0., speakerWidth)
+								}
+
+							// If panning value is above this speaker's range.
+							// This implies that there is a speaker on the right.
+							case trainContent.Panning > speakerMax &&
+								trainContent.Panning < (speakerMid+speakerWidth):
+								panning = mlsic.Scale(speakerMid+speakerWidth-trainContent.Panning, 0., 1., 0., speakerWidth)
+
+							// If panning value is bellow this speaker's range.
+							// This implies that there is a speaker on the left.
+							case trainContent.Panning < speakerMin &&
+								trainContent.Panning > (speakerMid-speakerWidth):
+								panning = 1 - mlsic.Scale(speakerMid-trainContent.Panning, 0., 1., 0., speakerWidth)
+
+							case speakerNumber == 0 &&
+								trainContent.Panning > speakerMid+(speakerWidth*float64(noOfSpeakers-1)):
+								panning = mlsic.Scale(trainContent.Panning-(speakerMid+(speakerWidth*float64(noOfSpeakers-1))), 0., 1., 0., speakerWidth)
+
+							case speakerNumber == noOfSpeakers &&
+								trainContent.Panning < speakerWidth/2:
+								panning = mlsic.Scale((speakerWidth/2)-trainContent.Panning, 0., 1., 0., speakerWidth)
+							}
+						}
+
+						signal[speakerNumber][sineIndex+o] += v * panning
+					}
+				}
+			}
+
+			for p, s := range signal {
+				for o, v := range s {
+					speakersSignals[p][i+o-(i-previousSignalEnd)] += v
+				}
+			}
+
+			previousSignalEnd += len(signal[0]) - fundamentalSignalEnd
+		}
+
+		for o, s := range speakersSignals {
+			if len(speakers[o]) < len(s) {
+				speakers[o] = append(speakers[o], make([]float64, len(s)-len(speakers[o]))...)
+			}
+		}
+
+		for o, s := range speakersSignals {
+			for p, v := range s {
+				speakers[o][p] += v
+			}
+		}
+	}
+
+	return speakers, nil
+}
+
+func trimToZero(s []float64) int {
+	var lastIndex int
+
+	switch {
+	case s[len(s)-1] > 0:
+		for i := len(s) - 1 - 1; i >= 0; i-- {
+			if s[i] <= 0 {
+				lastIndex = i
+				break
+			}
+		}
+
+	case s[len(s)-1] < 0:
+		for i := len(s) - 1 - 1; i >= 0; i-- {
+			if s[i] >= 0 {
+				for o := i; o >= 0; o-- {
+					if s[o] <= 0 {
+						lastIndex = o
+						break
+					}
+				}
+
+				break
+			}
+		}
+
+	case s[len(s)-1] == 0:
+		lastIndex = len(s) - 1
+
+	}
+
+	return lastIndex
 }
