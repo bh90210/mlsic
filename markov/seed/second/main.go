@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Seed composition generation.
-	poly := MelodyTrain()
+	poly := seedTrain()
 
 	// Add the data to the model.
 	m.AddPoly(poly)
@@ -71,9 +71,15 @@ func main() {
 	}
 }
 
-// MelodyTrain .
-func MelodyTrain() markov.Poly {
+// seedTrain .
+func seedTrain() markov.Poly {
 	log.Info().Msg("melody train")
+
+	var poly markov.Poly
+
+	//
+	// Voice 1.
+	//
 
 	voice1Trains := make(markov.Voice, 0)
 
@@ -109,7 +115,7 @@ func MelodyTrain() markov.Poly {
 	var h markov.Harmonics
 	h.PartialsGeneration(voice1Trains)
 
-	var poly markov.Poly
+	// Append voice to poly slice.
 	poly = append(poly, voice1Trains)
 
 	//
@@ -118,7 +124,6 @@ func MelodyTrain() markov.Poly {
 
 	voice2Trains := make(markov.Voice, 0)
 
-	// Manual .
 	voice2Trains[0] = make(markov.Train)
 
 	voice2Trains[0][0] = markov.Wagon{
@@ -149,6 +154,7 @@ func MelodyTrain() markov.Poly {
 	// Harmonics .
 	h.PartialsGeneration(voice2Trains)
 
+	// Append voice to poly slice.
 	poly = append(poly, voice2Trains)
 
 	return poly
