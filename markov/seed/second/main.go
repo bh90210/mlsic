@@ -11,7 +11,6 @@ import (
 
 	"github.com/bh90210/mlsic"
 	"github.com/bh90210/mlsic/markov"
-	"github.com/bh90210/mlsic/markov/seed"
 	"github.com/bh90210/mlsic/render"
 	"github.com/mb-14/gomarkov"
 )
@@ -32,18 +31,19 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	m := markov.Models{
-		Freq: gomarkov.NewChain(1),
-		Amp:  gomarkov.NewChain(1),
-		Dur:  gomarkov.NewChain(1),
+		Poly: gomarkov.NewChain(2),
 	}
 
 	// Seed composition generation.
 	poly := MelodyTrain()
 
+	// Add the data to the model.
+	m.AddPoly(poly)
+
 	// Save seed model.
 	err := m.Export(*modelsPath)
 	if err != nil {
-		log.Fatal().Err(err).Msg("exporting models")
+		log.Fatal().Err(err).Msg("exporting model")
 	}
 
 	channels, err := markov.DeconstructTrains(poly, 2)
@@ -58,7 +58,7 @@ func main() {
 	fmt.Println(*filesPath)
 
 	if err := p.Render(music, "seed"); err != nil {
-		log.Fatal().Err(err).Msg("rendering")
+		log.Fatal().Err(err).Msg("rendering port audio")
 	}
 
 	// Render audio as .wav files.
@@ -67,7 +67,7 @@ func main() {
 	}
 
 	if err := pp.Render(music, "seed"); err != nil {
-		log.Fatal().Err(err).Msg("rendering")
+		log.Fatal().Err(err).Msg("rendering wav files")
 	}
 }
 
@@ -75,12 +75,12 @@ func main() {
 func MelodyTrain() markov.Poly {
 	log.Info().Msg("melody train")
 
-	voice1Trains := make(markov.Trains, 0)
+	voice1Trains := make(markov.Voice, 0)
 
 	// Manual .
 	voice1Trains[0] = make(markov.Train)
 
-	voice1Trains[0][0] = markov.TrainContents{
+	voice1Trains[0][0] = markov.Wagon{
 		Sine: mlsic.Sine{
 			Frequency: 555,
 			Amplitude: 0.49,
@@ -96,7 +96,7 @@ func MelodyTrain() markov.Poly {
 
 	voice1Trains[prev] = make(markov.Train)
 
-	voice1Trains[prev][0] = markov.TrainContents{
+	voice1Trains[prev][0] = markov.Wagon{
 		Sine: mlsic.Sine{
 			Frequency: 350,
 			Amplitude: 0.4,
@@ -106,7 +106,7 @@ func MelodyTrain() markov.Poly {
 	}
 
 	// Harmonics .
-	var h seed.Harmonics
+	var h markov.Harmonics
 	h.PartialsGeneration(voice1Trains)
 
 	var poly markov.Poly
@@ -116,12 +116,12 @@ func MelodyTrain() markov.Poly {
 	// Second voice.
 	//
 
-	voice2Trains := make(markov.Trains, 0)
+	voice2Trains := make(markov.Voice, 0)
 
 	// Manual .
 	voice2Trains[0] = make(markov.Train)
 
-	voice2Trains[0][0] = markov.TrainContents{
+	voice2Trains[0][0] = markov.Wagon{
 		Sine: mlsic.Sine{
 			Frequency: 1000,
 			Amplitude: 0.29,
@@ -137,7 +137,7 @@ func MelodyTrain() markov.Poly {
 
 	voice2Trains[prev] = make(markov.Train)
 
-	voice2Trains[prev][0] = markov.TrainContents{
+	voice2Trains[prev][0] = markov.Wagon{
 		Sine: mlsic.Sine{
 			Frequency: 750,
 			Amplitude: 0.2,

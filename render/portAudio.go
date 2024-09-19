@@ -25,7 +25,7 @@ type PortAudio struct {
 }
 
 // NewPortAudio will try to initialize with a portaudio.DefaultOutputDevice()
-// with the default buffer size set at 512 and latency 10.
+// with the default buffer size set at 512, latency 10ms and 2 channels.
 func NewPortAudio(opts ...PortAudioOption) (pa *PortAudio, err error) {
 	err = portaudio.Initialize()
 	if err != nil {
@@ -137,6 +137,13 @@ func WithOutputDevice(device *portaudio.DeviceInfo) PortAudioOption {
 func WithLatency(latency time.Duration) PortAudioOption {
 	return func(s *PortAudio) {
 		s.Latency = latency
+	}
+}
+
+// WithChannels sets PortAudio's number of channels.
+func WithChannels(no int) PortAudioOption {
+	return func(s *PortAudio) {
+		s.Channels = no
 	}
 }
 

@@ -13,11 +13,19 @@ const MaxFrequency = 18000
 const SignalLengthMultiplier = 44
 
 const (
-	OneSpeaker         = 1
-	TwoSpeakers        = 2
-	SpeakerOne         = 0
-	SpeakerTwo         = 1
+	// OneSpeaker .
+	OneSpeaker = 1
+	// TwoSpeakers .
+	TwoSpeakers = 2
+
+	// SpeakerOne .
+	SpeakerOne = 0
+	// SpeakerTwo .
+	SpeakerTwo = 1
+
+	// speakersMinPanning .
 	speakersMinPanning = 0
+	// speakersMaxPanning .
 	speakersMaxPanning = 1
 )
 

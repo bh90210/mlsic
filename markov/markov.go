@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/rs/zerolog/log"
@@ -21,11 +22,13 @@ type Models struct {
 	Freq *gomarkov.Chain
 	Amp  *gomarkov.Chain
 	Dur  *gomarkov.Chain
+
+	Poly *gomarkov.Chain
 }
 
 // Add .
-func (t *Models) Add(train []mlsic.Sine) {
-	t.nilCheck()
+func (m *Models) Add(train []mlsic.Sine) {
+	m.nilCheck()
 
 	frequency := []string{}
 	amplitude := []string{}
@@ -37,59 +40,134 @@ func (t *Models) Add(train []mlsic.Sine) {
 		duration = append(duration, fmt.Sprintf("%v", v.Duration.Milliseconds()))
 	}
 
-	t.Freq.Add(frequency)
-	t.Amp.Add(amplitude)
-	t.Dur.Add(duration)
+	m.Freq.Add(frequency)
+	m.Amp.Add(amplitude)
+	m.Dur.Add(duration)
+}
+
+type indexHelper struct {
+	voice      int
+	trainIndex int
+	wagonIndex int
+}
+
+// AddPoly .
+func (m *Models) AddPoly(poly Poly) {
+	m.nilCheck(true)
+
+	// We will collect all indices there is a sine in a map[int].
+	// the slice if ints []int are the voices this particular index
+	// has a corresponding sine. This is because multiple voices may
+	// share the same index.
+	// For example: map[trainIndex+wagonIndex][voice][wagonIndex].
+	indices := make(map[int][]indexHelper)
+	for voiceNo, voice := range poly {
+		for trainIndex, train := range voice {
+			for wagonIndex := range train {
+				indices[trainIndex+wagonIndex] = append(indices[trainIndex+wagonIndex], indexHelper{
+					voice:      voiceNo,
+					trainIndex: trainIndex,
+					wagonIndex: wagonIndex,
+				})
+			}
+		}
+	}
+
+	// Order indices.
+	OrderedIndices := make([]int, 0)
+	for k := range indices {
+		OrderedIndices = append(OrderedIndices, k)
+	}
+
+	sort.Ints(OrderedIndices)
+
+	for _, i := range OrderedIndices {
+		indexHelpers := indices[i]
+		for _, h := range indexHelpers {
+			wagon := poly[h.voice][h.trainIndex][h.wagonIndex]
+
+			w := []string{}
+			w = append(w, fmt.Sprintf("%f", wagon.Sine.Frequency))
+			w = append(w, fmt.Sprintf("%f", wagon.Sine.Amplitude))
+			w = append(w, fmt.Sprintf("%v", wagon.Sine.Duration.Milliseconds()))
+			w = append(w, fmt.Sprintf("%f", wagon.Panning))
+
+			m.Poly.Add([]string{strings.Join(w, " ")})
+		}
+	}
 }
 
 // Export .
-func (t *Models) Export(path string) error {
-	t.nilCheck()
+func (m *Models) Export(path string) error {
+	if m.Poly != nil {
+		poly, err := m.Poly.MarshalJSON()
+		if err != nil {
+			return err
+		}
 
-	freq, err := t.Freq.MarshalJSON()
-	if err != nil {
-		return err
+		err = os.WriteFile(filepath.Join(path, "poly.json"), poly, 0644)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = os.WriteFile(filepath.Join(path, "freq.json"), freq, 0644)
-	if err != nil {
-		return err
+	if m.Freq != nil {
+		freq, err := m.Freq.MarshalJSON()
+		if err != nil {
+			return err
+		}
+
+		err = os.WriteFile(filepath.Join(path, "freq.json"), freq, 0644)
+		if err != nil {
+			return err
+		}
 	}
 
-	amp, err := t.Amp.MarshalJSON()
-	if err != nil {
-		return err
+	if m.Amp != nil {
+		amp, err := m.Amp.MarshalJSON()
+		if err != nil {
+			return err
+		}
+
+		err = os.WriteFile(filepath.Join(path, "amp.json"), amp, 0644)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = os.WriteFile(filepath.Join(path, "amp.json"), amp, 0644)
-	if err != nil {
-		return err
-	}
+	if m.Dur != nil {
+		dur, err := m.Dur.MarshalJSON()
+		if err != nil {
+			return err
+		}
 
-	dur, err := t.Dur.MarshalJSON()
-	if err != nil {
-		return err
+		err = os.WriteFile(filepath.Join(path, "dur.json"), dur, 0644)
+		if err != nil {
+			return err
+		}
 	}
-
-	err = os.WriteFile(filepath.Join(path, "dur.json"), dur, 0644)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (t *Models) nilCheck() {
-	if t.Freq == nil {
-		t.Freq = &gomarkov.Chain{}
+func (m *Models) nilCheck(poly ...bool) {
+	if poly != nil {
+		if m.Poly == nil {
+			m.Poly = gomarkov.NewChain(2)
+		}
+
+		return
 	}
 
-	if t.Amp == nil {
-		t.Amp = &gomarkov.Chain{}
+	if m.Freq == nil {
+		m.Freq = gomarkov.NewChain(1)
 	}
 
-	if t.Dur == nil {
-		t.Dur = &gomarkov.Chain{}
+	if m.Amp == nil {
+		m.Amp = gomarkov.NewChain(1)
+	}
+
+	if m.Dur == nil {
+		m.Dur = gomarkov.NewChain(1)
 	}
 }
 
@@ -116,14 +194,14 @@ func Generate(filepath string, train []mlsic.Sine, h *Harmonics, ngen int) {
 
 			signal := osc.Signal(44 * int(v.Duration.Abs().Milliseconds()))
 
-			for partial, amplitude := range h.Partials {
+			for partial, amplitude := range h.Partials1 {
 				if v.Frequency*float64(partial) > 18000 {
 					continue
 				}
 
 				osc = generator.NewOsc(generator.WaveSine, v.Frequency*float64(partial), 44100)
 
-				amplitude = amplitude + ((amplitude - h.Partials[partial]) / 2)
+				amplitude = amplitude + ((amplitude - h.Partials1[partial]) / 2)
 				if amplitude < 0 {
 					amplitude *= -1
 				}
@@ -183,17 +261,17 @@ func Generate(filepath string, train []mlsic.Sine, h *Harmonics, ngen int) {
 	}
 }
 
-// Train fundamental and partials.
-type Train map[int]TrainContents
-
-// Trains is a single voice (monophony) from start to finish.
-type Trains map[int]Train
-
 // Poly each slice is a different poly voice.
-type Poly []Trains
+type Poly []Voice
 
-// TrainContents .
-type TrainContents struct {
+// Voice is a single voice (monophony) from start to finish.
+type Voice map[int]Train
+
+// Train fundamental and partials.
+type Train map[int]Wagon
+
+// Wagon .
+type Wagon struct {
 	Sine    mlsic.Sine
 	Panning float64
 }

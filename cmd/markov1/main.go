@@ -28,7 +28,7 @@ func main() {
 
 	// Init the harmonics.
 	h := &markov.Harmonics{
-		Partials: map[int]float64{},
+		Partials1: map[int]float64{},
 	}
 
 	// Populate the partials.
