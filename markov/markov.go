@@ -293,44 +293,44 @@ func DeconstructTrains(poly Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 
 	speakers := make([]mlsic.Audio, noOfSpeakers)
 
-	for _, voiceTrains := range poly {
+	for _, voice := range poly {
 		// Determine the total trains length.
 		var length int
-		for k := range voiceTrains {
+		for k := range voice {
 			if length < k {
 				length = k
 			}
 		}
 
-		length += int(voiceTrains[length][0].Sine.Duration.Abs().Milliseconds() * mlsic.SignalLengthMultiplier)
+		length += int(voice[length][0].Sine.Duration.Abs().Milliseconds() * mlsic.SignalLengthMultiplier)
 
 		// Order trains map.
-		trainKeys := make([]int, 0)
-		for k := range voiceTrains {
-			trainKeys = append(trainKeys, k)
+		voiceKeys := make([]int, 0)
+		for k := range voice {
+			voiceKeys = append(voiceKeys, k)
 		}
 
-		sort.Ints(trainKeys)
+		sort.Ints(voiceKeys)
 
-		speakersSignals := make([][]float64, noOfSpeakers)
-		for i := range speakersSignals {
-			speakersSignals[i] = make([]float64, length+MaximumPartialStartingPoint+MinimumPartialDuration)
+		voiceSignals := make([][]float64, noOfSpeakers)
+		for i := range voiceSignals {
+			voiceSignals[i] = make([]float64, length+MaximumPartialStartingPoint+MinimumPartialDuration)
 		}
 
 		var previousSignalEnd int
-		for _, i := range trainKeys {
-			signal := make([][]float64, noOfSpeakers)
+		for _, i := range voiceKeys {
+			trainSignal := make([][]float64, noOfSpeakers)
 
 			var fundamentalSignalEnd int
-			for sineIndex, trainContent := range voiceTrains[i] {
-				osc := generator.NewOsc(generator.WaveSine, trainContent.Sine.Frequency, mlsic.SampleRate)
-				osc.Amplitude = trainContent.Sine.Amplitude
+			for wagonIndex, wagon := range voice[i] {
+				osc := generator.NewOsc(generator.WaveSine, wagon.Sine.Frequency, mlsic.SampleRate)
+				osc.Amplitude = wagon.Sine.Amplitude
 
-				sineSignal := osc.Signal(mlsic.SignalLengthMultiplier * int(trainContent.Sine.Duration.Abs().Milliseconds()))
+				sineSignal := osc.Signal(mlsic.SignalLengthMultiplier * int(wagon.Sine.Duration.Abs().Milliseconds()))
 				sineSignalEnd := trimToZero(sineSignal)
 
 				// If we are dealing with the fundamental take note where it ends.
-				if sineIndex == 0 {
+				if wagonIndex == 0 {
 					fundamentalSignalEnd = len(sineSignal) - sineSignalEnd
 				}
 
@@ -346,107 +346,40 @@ func DeconstructTrains(poly Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 
 				// Append empty values to signal if signal is shorter than needed.
 				for o := 0; o < noOfSpeakers; o++ {
-					if len(signal[o]) < len(sineSignal[:sineSignalEnd])+sineIndex {
-						signal[o] = append(signal[o], make([]float64, len(sineSignal[:sineSignalEnd])+sineIndex-len(signal[o]))...)
+					if len(trainSignal[o]) < len(sineSignal[:sineSignalEnd])+wagonIndex {
+						trainSignal[o] = append(trainSignal[o], make([]float64, len(sineSignal[:sineSignalEnd])+wagonIndex-len(trainSignal[o]))...)
 					}
 				}
 
 				for o, v := range sineSignal[:sineSignalEnd] {
 					// Panning.
 					for speakerNumber := 0; speakerNumber < noOfSpeakers; speakerNumber++ {
-						var panning float64
-
-						switch noOfSpeakers {
-						// Mono.
-						case mlsic.OneSpeaker:
-							panning = 1
-
-						// Stereo.
-						case mlsic.TwoSpeakers:
-							switch speakerNumber {
-							// Left.
-							case mlsic.SpeakerOne:
-								panning = 1 - trainContent.Panning
-
-							// Right.
-							case mlsic.SpeakerTwo:
-								panning = trainContent.Panning
-							}
-
-						// Three and more speakers.
-						default:
-							// Find the width of individual speaker.
-							speakerWidth := 1. / float64(noOfSpeakers)
-							// Find the max width value of current speaker.
-							speakerMax := speakerWidth * float64((speakerNumber))
-							// Find the min width value of current speaker.
-							speakerMin := speakerMax - speakerWidth
-							// Find current speaker's mid point.
-							speakerMid := speakerMin + (speakerWidth / 2)
-
-							switch {
-							// If the panning value is within the width of this speaker and
-							// above or below speaker's mid.
-							case trainContent.Panning >= speakerMin &&
-								trainContent.Panning <= speakerMax:
-
-								if trainContent.Panning == speakerMid {
-									panning = 1
-								}
-
-								if trainContent.Panning < speakerMid {
-									panning = 1 - mlsic.Scale(speakerMid-trainContent.Panning, 0., 1., 0., speakerWidth)
-								}
-
-								if trainContent.Panning > speakerMid {
-									panning = mlsic.Scale(trainContent.Panning-speakerMid, 0., 1., 0., speakerWidth)
-								}
-
-							// If panning value is above this speaker's range.
-							// This implies that there is a speaker on the right.
-							case trainContent.Panning > speakerMax &&
-								trainContent.Panning < (speakerMid+speakerWidth):
-								panning = mlsic.Scale(speakerMid+speakerWidth-trainContent.Panning, 0., 1., 0., speakerWidth)
-
-							// If panning value is bellow this speaker's range.
-							// This implies that there is a speaker on the left.
-							case trainContent.Panning < speakerMin &&
-								trainContent.Panning > (speakerMid-speakerWidth):
-								panning = 1 - mlsic.Scale(speakerMid-trainContent.Panning, 0., 1., 0., speakerWidth)
-
-							case speakerNumber == 0 &&
-								trainContent.Panning > speakerMid+(speakerWidth*float64(noOfSpeakers-1)):
-								panning = mlsic.Scale(trainContent.Panning-(speakerMid+(speakerWidth*float64(noOfSpeakers-1))), 0., 1., 0., speakerWidth)
-
-							case speakerNumber == noOfSpeakers &&
-								trainContent.Panning < speakerWidth/2:
-								panning = mlsic.Scale((speakerWidth/2)-trainContent.Panning, 0., 1., 0., speakerWidth)
-							}
-						}
-
-						signal[speakerNumber][sineIndex+o] += v * panning
+						panning := Panning(noOfSpeakers, speakerNumber, wagon)
+						trainSignal[speakerNumber][wagonIndex+o] += v * panning
 					}
 				}
 			}
 
-			for p, s := range signal {
-				for o, v := range s {
-					speakersSignals[p][i+o-(i-previousSignalEnd)] += v
+			for speakerNo, signal := range trainSignal {
+				for o, v := range signal {
+					voiceSignals[speakerNo][i+o-(i-previousSignalEnd)] = v
+					// voiceSignals[speakerNo][i+o] = v
 				}
 			}
 
-			previousSignalEnd += len(signal[0]) - fundamentalSignalEnd
+			// TODO: prolly this gets called more than it needs to.
+			previousSignalEnd += len(trainSignal[0]) - fundamentalSignalEnd
 		}
 
-		for o, s := range speakersSignals {
-			if len(speakers[o]) < len(s) {
-				speakers[o] = append(speakers[o], make([]float64, len(s)-len(speakers[o]))...)
+		for speakerNo, signal := range voiceSignals {
+			if len(speakers[speakerNo]) < len(signal) {
+				speakers[speakerNo] = append(speakers[speakerNo], make([]float64, len(signal)-len(speakers[speakerNo]))...)
 			}
 		}
 
-		for o, s := range speakersSignals {
-			for p, v := range s {
-				speakers[o][p] += v
+		for speakerNo, signal := range voiceSignals {
+			for i, v := range signal {
+				speakers[speakerNo][i] += v
 			}
 		}
 	}
@@ -486,4 +419,77 @@ func trimToZero(s []float64) int {
 	}
 
 	return lastIndex
+}
+
+// Panning .
+func Panning(noOfSpeakers, speakerNumber int, wagon Wagon) (panning float64) {
+	switch noOfSpeakers {
+	// Mono.
+	case mlsic.OneSpeaker:
+		panning = 1
+
+	// Stereo.
+	case mlsic.TwoSpeakers:
+		switch speakerNumber {
+		// Left.
+		case mlsic.SpeakerOne:
+			panning = 1 - wagon.Panning
+
+		// Right.
+		case mlsic.SpeakerTwo:
+			panning = wagon.Panning
+		}
+
+	// Three and more speakers.
+	default:
+		// Find the width of individual speaker.
+		speakerWidth := 1. / float64(noOfSpeakers)
+		// Find the max width value of current speaker.
+		speakerMax := speakerWidth * float64((speakerNumber))
+		// Find the min width value of current speaker.
+		speakerMin := speakerMax - speakerWidth
+		// Find current speaker's mid point.
+		speakerMid := speakerMin + (speakerWidth / 2)
+
+		switch {
+		// If the panning value is within the width of this speaker and
+		// above or below speaker's mid.
+		case wagon.Panning >= speakerMin &&
+			wagon.Panning <= speakerMax:
+
+			if wagon.Panning == speakerMid {
+				panning = 1
+			}
+
+			if wagon.Panning < speakerMid {
+				panning = 1 - mlsic.Scale(speakerMid-wagon.Panning, 0., 1., 0., speakerWidth)
+			}
+
+			if wagon.Panning > speakerMid {
+				panning = mlsic.Scale(wagon.Panning-speakerMid, 0., 1., 0., speakerWidth)
+			}
+
+		// If panning value is above this speaker's range.
+		// This implies that there is a speaker on the right.
+		case wagon.Panning > speakerMax &&
+			wagon.Panning < (speakerMid+speakerWidth):
+			panning = mlsic.Scale(speakerMid+speakerWidth-wagon.Panning, 0., 1., 0., speakerWidth)
+
+		// If panning value is bellow this speaker's range.
+		// This implies that there is a speaker on the left.
+		case wagon.Panning < speakerMin &&
+			wagon.Panning > (speakerMid-speakerWidth):
+			panning = 1 - mlsic.Scale(speakerMid-wagon.Panning, 0., 1., 0., speakerWidth)
+
+		case speakerNumber == 0 &&
+			wagon.Panning > speakerMid+(speakerWidth*float64(noOfSpeakers-1)):
+			panning = mlsic.Scale(wagon.Panning-(speakerMid+(speakerWidth*float64(noOfSpeakers-1))), 0., 1., 0., speakerWidth)
+
+		case speakerNumber == noOfSpeakers &&
+			wagon.Panning < speakerWidth/2:
+			panning = mlsic.Scale((speakerWidth/2)-wagon.Panning, 0., 1., 0., speakerWidth)
+		}
+	}
+
+	return
 }

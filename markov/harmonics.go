@@ -47,25 +47,25 @@ func (h *Harmonics) gen() {
 		h.partials2[i] = 0
 
 		if big.NewInt(int64(i)).ProbablyPrime(0) {
-			h.partials2[i] = 0.001 * float64(i)
+			h.partials2[i] = 0.0051 * float64(i)
 		}
 	}
 }
 
 // PartialsGeneration .
-func (h *Harmonics) PartialsGeneration(trains Voice) {
+func (h *Harmonics) PartialsGeneration(voice Voice) {
 	if h.Partials1 == nil || h.partials2 == nil {
 		h.gen()
 	}
 
 	patrialsTrains := make(Voice)
 
-	for trainIndex, train := range trains {
-		sine := train[0]
+	for trainIndex, train := range voice {
+		wagon := train[0]
 		patrialsTrains[trainIndex] = make(Train)
 
-		for partial, amplitude := range h.Partials1 {
-			freq := sine.Sine.Frequency * float64(partial)
+		for partial, amplitude := range h.partials2 {
+			freq := wagon.Sine.Frequency * float64(partial)
 			if freq > mlsic.MaxFrequency {
 				continue
 			}
@@ -86,7 +86,7 @@ func (h *Harmonics) PartialsGeneration(trains Voice) {
 				}
 			}
 
-			l := mlsic.SignalLengthMultiplier * int(sine.Sine.Duration.Abs().Milliseconds())
+			l := mlsic.SignalLengthMultiplier * int(wagon.Sine.Duration.Abs().Milliseconds())
 			l -= partialIndex
 			l /= mlsic.SignalLengthMultiplier
 
@@ -97,18 +97,18 @@ func (h *Harmonics) PartialsGeneration(trains Voice) {
 			patrialsTrains[trainIndex][partialIndex] = Wagon{
 				Sine: mlsic.Sine{
 					Frequency: freq,
-					Amplitude: sine.Sine.Amplitude * amplitude,
+					Amplitude: wagon.Sine.Amplitude * amplitude,
 					Duration:  time.Duration(l * int(time.Millisecond)),
 				},
 				// TODO: Panning of the partials is similar to fundamental. Make it dynamic.
-				Panning: trains[trainIndex][0].Panning,
+				Panning: voice[trainIndex][0].Panning,
 			}
 		}
 	}
 
 	for trainIndex, train := range patrialsTrains {
-		for sineIndex, sine := range train {
-			trains[trainIndex][sineIndex] = sine
+		for wagonIndex, wagon := range train {
+			voice[trainIndex][wagonIndex] = wagon
 		}
 	}
 }
