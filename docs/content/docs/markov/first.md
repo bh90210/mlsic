@@ -8,7 +8,7 @@ _August 19th, 2024_
 
 ## Introduction
 
-The first iteration should be considered, to borrow a software world term, a proof of concept. There was not a thoughtful process behind the aesthetics of the produced sounds but rather the focus was to come up with a working strategy of generating them. Further experiments will address the shortcomings of the first one.
+The first iteration should be considered a proof of concept. There was not a thoughtful process behind the aesthetics of the produced sounds but rather the focus was to come up with a working strategy of generating them. Further experiments will address the shortcomings of the first one.
 
 Experiment #1 comes in the form of a small command line program that generates audio based on markov chains models. It has five available flags. `-debug` to enable debug logging - useful while developing, `-ngen` the number of successive generations to generate, `-files` the directory to save the audio files of each generation, `-models` the directory to save the generated markov chains models and `-seed` the seed markov chain models to kick start the process.
 

@@ -29,7 +29,7 @@ type Song struct {
 	SeedModelPath string
 
 	// Harmonics is the harmonics structure that will be used for audio generation.
-	Harmonics *Harmonics
+	Harmonics mlsic.Harmonics
 }
 
 type model struct {

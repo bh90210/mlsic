@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/big"
 	"os"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/bh90210/mlsic"
 	"github.com/bh90210/mlsic/markov"
+	"github.com/bh90210/mlsic/markov/seed"
 	"github.com/bh90210/mlsic/render"
 	"github.com/mb-14/gomarkov"
 )
@@ -49,7 +51,7 @@ func main() {
 	noOfSpeakers := mlsic.TwoSpeakers
 
 	// Generate the audio signal.
-	speakers, err := markov.DeconstructTrains(poly, noOfSpeakers)
+	speakers, err := markov.Deconstruct(poly, noOfSpeakers)
 	if err != nil {
 		log.Fatal().Err(err).Msg("deconstructing trains")
 	}
@@ -76,21 +78,21 @@ func main() {
 }
 
 // seedTrain .
-func seedTrain() markov.Poly {
+func seedTrain() mlsic.Poly {
 	log.Info().Msg("melody train")
 
-	var poly markov.Poly
+	var poly mlsic.Poly
 
-	voice1 := make(markov.Voice, 0)
+	voice1 := make(mlsic.Voice, 0)
 	var prev int
 
 	// 400.
-	voice1[prev] = make(markov.Train)
-	voice1[prev][0] = markov.Wagon{
+	voice1[prev] = make(mlsic.Train)
+	voice1[prev][0] = mlsic.Wagon{
 		Sine: mlsic.Sine{
 			Frequency: 400,
 			Amplitude: 0.,
-			Duration:  time.Duration(30 * time.Millisecond),
+			Duration:  time.Duration(15 * time.Millisecond),
 		},
 		Panning: 0.,
 	}
@@ -99,8 +101,8 @@ func seedTrain() markov.Poly {
 		prev += int(voice1[prev][0].Sine.Duration.Abs().Milliseconds()) *
 			mlsic.SignalLengthMultiplier
 
-		voice1[prev] = make(markov.Train)
-		voice1[prev][0] = markov.Wagon{
+		voice1[prev] = make(mlsic.Train)
+		voice1[prev][0] = mlsic.Wagon{
 			Sine: mlsic.Sine{
 				Frequency: 400,
 				Amplitude: i / 4,
@@ -114,8 +116,8 @@ func seedTrain() markov.Poly {
 		prev += int(voice1[prev][0].Sine.Duration.Abs().Milliseconds()) *
 			mlsic.SignalLengthMultiplier
 
-		voice1[prev] = make(markov.Train)
-		voice1[prev][0] = markov.Wagon{
+		voice1[prev] = make(mlsic.Train)
+		voice1[prev][0] = mlsic.Wagon{
 			Sine: mlsic.Sine{
 				Frequency: 400,
 				Amplitude: i / 4,
@@ -125,15 +127,15 @@ func seedTrain() markov.Poly {
 		}
 	}
 
-	// var h markov.Harmonics
-	// h.PartialsGeneration(voice1)
+	h := &primeHarmonics{}
+	seed.PartialsGeneration(h, voice1)
 
-	voice2 := make(markov.Voice, 0)
-	prev = 0
+	voice2 := make(mlsic.Voice, 0)
+	prev2 := prev
 
 	// 400.
-	voice2[prev] = make(markov.Train)
-	voice2[prev][0] = markov.Wagon{
+	voice2[prev2] = make(mlsic.Train)
+	voice2[prev2][0] = mlsic.Wagon{
 		Sine: mlsic.Sine{
 			Frequency: 800,
 			Amplitude: 0.,
@@ -143,11 +145,11 @@ func seedTrain() markov.Poly {
 	}
 
 	for i := 0.98; i > 0.02; i -= 0.02 {
-		prev += int(voice2[prev][0].Sine.Duration.Abs().Milliseconds()) *
+		prev2 += int(voice2[prev2][0].Sine.Duration.Abs().Milliseconds()) *
 			mlsic.SignalLengthMultiplier
 
-		voice2[prev] = make(markov.Train)
-		voice2[prev][0] = markov.Wagon{
+		voice2[prev2] = make(mlsic.Train)
+		voice2[prev2][0] = mlsic.Wagon{
 			Sine: mlsic.Sine{
 				Frequency: 500,
 				Amplitude: i / 4,
@@ -158,11 +160,11 @@ func seedTrain() markov.Poly {
 	}
 
 	for i := 0.02; i < 1.; i += 0.02 {
-		prev += int(voice2[prev][0].Sine.Duration.Abs().Milliseconds()) *
+		prev2 += int(voice2[prev2][0].Sine.Duration.Abs().Milliseconds()) *
 			mlsic.SignalLengthMultiplier
 
-		voice2[prev] = make(markov.Train)
-		voice2[prev][0] = markov.Wagon{
+		voice2[prev2] = make(mlsic.Train)
+		voice2[prev2][0] = mlsic.Wagon{
 			Sine: mlsic.Sine{
 				Frequency: 500,
 				Amplitude: i / 4,
@@ -172,12 +174,72 @@ func seedTrain() markov.Poly {
 		}
 	}
 
-	// h.PartialsGeneration(voice2)
+	seed.PartialsGeneration(h, voice2)
 
-	// Append voice to poly slice.
-	poly = append(poly, voice2)
+	for i := 0.02; i < 1.; i += 0.02 {
+		prev += int(voice1[prev][0].Sine.Duration.Abs().Milliseconds()) *
+			mlsic.SignalLengthMultiplier
+
+		voice1[prev] = make(mlsic.Train)
+		voice1[prev][0] = mlsic.Wagon{
+			Sine: mlsic.Sine{
+				Frequency: 600,
+				Amplitude: i / 4,
+				Duration:  time.Duration(15 * time.Millisecond),
+			},
+			Panning: i,
+		}
+	}
+
+	for i := 0.98; i > 0.02; i -= 0.02 {
+		prev += int(voice1[prev][0].Sine.Duration.Abs().Milliseconds()) *
+			mlsic.SignalLengthMultiplier
+
+		voice1[prev] = make(mlsic.Train)
+		voice1[prev][0] = mlsic.Wagon{
+			Sine: mlsic.Sine{
+				Frequency: 700,
+				Amplitude: i / 4,
+				Duration:  time.Duration(30 * time.Millisecond),
+			},
+			Panning: i,
+		}
+	}
+
+	seed.PartialsGeneration(h, voice1)
+
+	// Append voices to poly slice.
+	// poly = append(poly, voice1, voice2)
+	poly = append(poly, voice1)
 
 	return poly
+}
+
+var _ mlsic.Harmonics = (*primeHarmonics)(nil)
+
+type primeHarmonics struct {
+	partials []mlsic.Partial
+}
+
+// Prime .
+func (p *primeHarmonics) Partials() []mlsic.Partial {
+	if len(p.partials) > 0 {
+		return p.partials
+	}
+
+	for i := 2; i < 1000; i++ {
+		v := 0.
+		if big.NewInt(int64(i)).ProbablyPrime(0) {
+			v = 0.0051 * float64(i)
+		}
+
+		p.partials = append(p.partials, mlsic.Partial{
+			Number:          i,
+			AmplitudeFactor: v,
+		})
+	}
+
+	return p.partials
 }
 
 // func       amp          time
@@ -195,12 +257,12 @@ func seedTrain() markov.Poly {
 // Voice 1.
 //
 
-// voice1Trains := make(markov.Voice, 0)
+// voice1Trains := make(mlsic.Voice, 0)
 
 // // Manual .
-// voice1Trains[0] = make(markov.Train)
+// voice1Trains[0] = make(mlsic.Train)
 
-// voice1Trains[0][0] = markov.Wagon{
+// voice1Trains[0][0] = mlsic.Wagon{
 // 	Sine: mlsic.Sine{
 // 		Frequency: 555,
 // 		Amplitude: 0.49,
@@ -214,9 +276,9 @@ func seedTrain() markov.Poly {
 // prev += int(voice1Trains[prev][0].Sine.Duration.Abs().Milliseconds()) *
 // 	mlsic.SignalLengthMultiplier
 
-// voice1Trains[prev] = make(markov.Train)
+// voice1Trains[prev] = make(mlsic.Train)
 
-// voice1Trains[prev][0] = markov.Wagon{
+// voice1Trains[prev][0] = mlsic.Wagon{
 // 	Sine: mlsic.Sine{
 // 		Frequency: 350,
 // 		Amplitude: 0.4,
@@ -226,7 +288,7 @@ func seedTrain() markov.Poly {
 // }
 
 // // Harmonics .
-// var h markov.Harmonics
+// var h mlsic.Harmonics
 // h.PartialsGeneration(voice1Trains)
 
 // // Append voice to poly slice.
@@ -236,11 +298,11 @@ func seedTrain() markov.Poly {
 // // Second voice.
 // //
 
-// voice2Trains := make(markov.Voice, 0)
+// voice2Trains := make(mlsic.Voice, 0)
 
-// voice2Trains[0] = make(markov.Train)
+// voice2Trains[0] = make(mlsic.Train)
 
-// voice2Trains[0][0] = markov.Wagon{
+// voice2Trains[0][0] = mlsic.Wagon{
 // 	Sine: mlsic.Sine{
 // 		Frequency: 1000,
 // 		Amplitude: 0.29,
@@ -254,9 +316,9 @@ func seedTrain() markov.Poly {
 // prev += int(voice2Trains[prev][0].Sine.Duration.Abs().Milliseconds()) *
 // 	mlsic.SignalLengthMultiplier
 
-// voice2Trains[prev] = make(markov.Train)
+// voice2Trains[prev] = make(mlsic.Train)
 
-// voice2Trains[prev][0] = markov.Wagon{
+// voice2Trains[prev][0] = mlsic.Wagon{
 // 	Sine: mlsic.Sine{
 // 		Frequency: 750,
 // 		Amplitude: 0.2,
