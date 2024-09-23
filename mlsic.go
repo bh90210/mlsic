@@ -4,6 +4,8 @@ package mlsic
 import (
 	"math"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // SampleRate should always be 44.1, the module doesn't support higher or lower sampling rates.
@@ -20,11 +22,25 @@ const (
 	OneSpeaker = 1
 	// TwoSpeakers 2 speakers.
 	TwoSpeakers = 2
+)
 
-	// SpeakerOne left speaker.
-	SpeakerOne = 0
-	// SpeakerTwo right speaker.
-	SpeakerTwo = 1
+const (
+	// Speaker1 speaker number one.
+	Speaker1 = iota
+	// Speaker2 speaker number two.
+	Speaker2
+	// Speaker3 speaker number three.
+	Speaker3
+	// Speaker4 speaker number four.
+	Speaker4
+	// Speaker5 speaker number five.
+	Speaker5
+	// Speaker6 speaker number six.
+	Speaker6
+	// Speaker7 speaker number seven.
+	Speaker7
+	// Speaker8 speaker number eight.
+	Speaker8
 )
 
 // Audio is a 64 bit float slice with PCM signal values from -1.0 to 1.0.
@@ -155,24 +171,24 @@ func Panning(noOfSpeakers, speakerNumber int, originalPanning float64) (panning 
 	case OneSpeaker:
 		panning = 1
 
-	// Stereo.
+		// Stereo.
 	case TwoSpeakers:
 		switch speakerNumber {
 		// Left.
-		case SpeakerOne:
+		case Speaker1:
 			panning = 1 - originalPanning
 
-		// Right.
-		case SpeakerTwo:
+			// Right.
+		case Speaker2:
 			panning = originalPanning
 		}
 
-	// Three and more speakers.
+		// Three and more speakers.
 	default:
 		// Find the width of individual speaker.
 		speakerWidth := 1. / float64(noOfSpeakers)
 		// Find the max width value of current speaker.
-		speakerMax := speakerWidth * float64((speakerNumber))
+		speakerMax := speakerWidth * float64((speakerNumber + 1))
 		// Find the min width value of current speaker.
 		speakerMin := speakerMax - speakerWidth
 		// Find current speaker's mid point.
@@ -193,7 +209,7 @@ func Panning(noOfSpeakers, speakerNumber int, originalPanning float64) (panning 
 			}
 
 			if originalPanning > speakerMid {
-				panning = Scale(originalPanning-speakerMid, 0., 1., 0., speakerWidth)
+				panning = 1 - Scale(originalPanning-speakerMid, 0., 1., 0., speakerWidth)
 			}
 
 		// If panning value is above this speaker's range.
@@ -208,16 +224,20 @@ func Panning(noOfSpeakers, speakerNumber int, originalPanning float64) (panning 
 			originalPanning > (speakerMid-speakerWidth):
 			panning = 1 - Scale(speakerMid-originalPanning, 0., 1., 0., speakerWidth)
 
+		// First speaker.
 		case speakerNumber == 0 &&
 			originalPanning > speakerMid+(speakerWidth*float64(noOfSpeakers-1)):
 			panning = Scale(originalPanning-(speakerMid+(speakerWidth*float64(noOfSpeakers-1))), 0., 1., 0., speakerWidth)
 
-		case speakerNumber == noOfSpeakers &&
+		// Last speaker.
+		case speakerNumber+1 == noOfSpeakers &&
 			originalPanning < speakerWidth/2:
 			panning = Scale((speakerWidth/2)-originalPanning, 0., 1., 0., speakerWidth)
+
 		}
 	}
 
+	log.Debug().Float64("pan", panning).Int("speakers", noOfSpeakers).Int("speaker", speakerNumber+1).Msg("panning calculation")
 	return
 }
 
