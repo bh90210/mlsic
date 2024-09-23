@@ -284,17 +284,17 @@ func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 	for _, voice := range poly {
 		voiceIndex, voiceSignals := voiceHelper(voice, noOfSpeakers)
 
-		var previousSignalEnd int
+		var previousSignalOffset int
 		for _, i := range voiceIndex {
 			trainSignal := make([][]float64, noOfSpeakers)
 
-			var fundamentalSignalEnd int
+			var fundamentalSignalOffset int
 			for wagonIndex, wagon := range voice[i] {
 				sineSignalLength, sineSignal := wagon.Sine.Signal()
-
+				// log.Fatal().Int("l", sineSignalLength).Int("ll", len(sineSignal)).Floats64("s", sineSignal[sineSignalLength-2:]).Msg("yo")
 				// If we are dealing with the fundamental take note where it ends.
 				if wagonIndex == 0 {
-					fundamentalSignalEnd = wagon.Sine.DurationInSamples() - sineSignalLength
+					fundamentalSignalOffset = wagon.Sine.DurationInSamples() - sineSignalLength
 				}
 
 				// Append empty values to signal if signal is shorter than needed.
@@ -316,12 +316,16 @@ func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 
 			for speakerNo, signal := range trainSignal {
 				for o, v := range signal {
-					// voiceSignals[speakerNo][i+o-(i-previousSignalEnd)] = v
-					voiceSignals[speakerNo][i+o] = v
+					// We will start adding from the fundamental end.
+					// This means that the harmonic trail of the fundamental
+					// will blend += with the start of the next train.
+					voiceSignals[speakerNo][i+o-previousSignalOffset] += v
 				}
 			}
 
-			previousSignalEnd += len(trainSignal[0]) - fundamentalSignalEnd
+			// Each train has a small offset (fundamentalSignalOffset.) We need
+			// to account += for the total offset of all fundamentals so far.
+			previousSignalOffset += fundamentalSignalOffset
 		}
 
 		for speakerNo, signal := range voiceSignals {

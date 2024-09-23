@@ -100,7 +100,7 @@ type Sine struct {
 func (s Sine) Signal() (int, Audio) {
 	s.sampleFactor = s.Frequency / SampleRate
 
-	samples := make(Audio, SignalLengthMultiplier*int(s.Duration.Abs().Milliseconds()))
+	samples := make(Audio, s.DurationInSamples())
 
 	for i := range samples {
 		samples[i] = math.Sin(s.phase * 2.0 * math.Pi)
@@ -116,7 +116,7 @@ func (s Sine) Signal() (int, Audio) {
 				// We are checking if we are at the last index.
 				// This is to catch the rare moment where the last value
 				// of the samples slice is the one where we need to clip.
-				if i == len(samples)-1 {
+				if i == len(samples)-1 && samples[i] > -0.001 {
 					// If we are then return.
 					lastIndex = i + 1
 
@@ -224,12 +224,12 @@ func Panning(noOfSpeakers, speakerNumber int, originalPanning float64) (panning 
 			originalPanning > (speakerMid-speakerWidth):
 			panning = 1 - Scale(speakerMid-originalPanning, 0., 1., 0., speakerWidth)
 
-		// First speaker.
+		// First speaker panning in case the original panning is above the middle of last speaker.
 		case speakerNumber == 0 &&
 			originalPanning > speakerMid+(speakerWidth*float64(noOfSpeakers-1)):
 			panning = Scale(originalPanning-(speakerMid+(speakerWidth*float64(noOfSpeakers-1))), 0., 1., 0., speakerWidth)
 
-		// Last speaker.
+		// Last speaker panning in case the original value was bellow first speaker's middle.
 		case speakerNumber+1 == noOfSpeakers &&
 			originalPanning < speakerWidth/2:
 			panning = Scale((speakerWidth/2)-originalPanning, 0., 1., 0., speakerWidth)

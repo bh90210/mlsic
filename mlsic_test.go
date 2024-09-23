@@ -32,11 +32,13 @@ func TestDurationInSamples(t *testing.T) {
 }
 
 func TestScale(t *testing.T) {
+	want := 0.1
 	got := Scale(10., 0., 1., 0., 100.)
-	assert.Equal(t, 0.1, got)
+	assert.Equal(t, want, got)
 
+	want = 50.
 	got = Scale(.5, 0., 100., 0., 1.)
-	assert.Equal(t, 50., got)
+	assert.Equal(t, want, got)
 }
 
 func TestPanning(t *testing.T) {
