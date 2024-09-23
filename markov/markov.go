@@ -282,31 +282,10 @@ func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 	speakers := make([]mlsic.Audio, noOfSpeakers)
 
 	for _, voice := range poly {
-		// Determine the total trains length.
-		var length int
-		for k := range voice {
-			if length < k {
-				length = k
-			}
-		}
-
-		length += int(voice[length][0].Sine.Duration.Abs().Milliseconds() * mlsic.SignalLengthMultiplier)
-
-		// Order trains map.
-		voiceKeys := make([]int, 0)
-		for k := range voice {
-			voiceKeys = append(voiceKeys, k)
-		}
-
-		sort.Ints(voiceKeys)
-
-		voiceSignals := make([][]float64, noOfSpeakers)
-		for i := range voiceSignals {
-			voiceSignals[i] = make([]float64, length+MaximumPartialStartingPoint+MinimumPartialDuration)
-		}
+		voiceIndex, voiceSignals := voiceHelper(voice, noOfSpeakers)
 
 		var previousSignalEnd int
-		for _, i := range voiceKeys {
+		for _, i := range voiceIndex {
 			trainSignal := make([][]float64, noOfSpeakers)
 
 			var fundamentalSignalEnd int
@@ -315,7 +294,7 @@ func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 
 				// If we are dealing with the fundamental take note where it ends.
 				if wagonIndex == 0 {
-					fundamentalSignalEnd = (mlsic.SignalLengthMultiplier * int(wagon.Sine.Duration.Abs().Milliseconds())) - sineSignalLength
+					fundamentalSignalEnd = wagon.Sine.DurationInSamples() - sineSignalLength
 				}
 
 				// Append empty values to signal if signal is shorter than needed.
@@ -326,8 +305,8 @@ func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 				}
 
 				for o, v := range sineSignal {
-					// Panning.
 					for speakerNumber := 0; speakerNumber < noOfSpeakers; speakerNumber++ {
+						// Panning.
 						panning := mlsic.Panning(noOfSpeakers, speakerNumber, wagon.Panning)
 
 						trainSignal[speakerNumber][wagonIndex+o] += v * wagon.Sine.Amplitude * panning
@@ -361,36 +340,31 @@ func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 	return speakers, nil
 }
 
-func trimToZero(s []float64) int {
-	var lastIndex int
-
-	switch {
-	case s[len(s)-1] > 0:
-		for i := len(s) - 1 - 1; i >= 0; i-- {
-			if s[i] <= 0 {
-				lastIndex = i
-				break
-			}
+func voiceHelper(voice mlsic.Voice, noOfSpeakers int) ([]int, [][]float64) {
+	// Determine the total trains length.
+	var length int
+	for k := range voice {
+		if length < k {
+			length = k
 		}
-
-	case s[len(s)-1] < 0:
-		for i := len(s) - 1 - 1; i >= 0; i-- {
-			if s[i] >= 0 {
-				for o := i; o >= 0; o-- {
-					if s[o] <= 0 {
-						lastIndex = o
-						break
-					}
-				}
-
-				break
-			}
-		}
-
-	case s[len(s)-1] == 0:
-		lastIndex = len(s) - 1
-
 	}
 
-	return lastIndex
+	// Add the duration of voice's last train.
+	length += voice[length][0].Sine.DurationInSamples()
+
+	// Order trains map.
+	voiceIndex := make([]int, 0)
+	for k := range voice {
+		voiceIndex = append(voiceIndex, k)
+	}
+
+	sort.Ints(voiceIndex)
+
+	// Create signals slices of the appropriate length for each speaker.
+	voiceSignals := make([][]float64, noOfSpeakers)
+	for i := range voiceSignals {
+		voiceSignals[i] = make([]float64, length+MaximumPartialStartingPoint+MinimumPartialDuration)
+	}
+
+	return voiceIndex, voiceSignals
 }

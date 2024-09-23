@@ -45,13 +45,13 @@ type Renderer interface {
 	Render(source []Audio, name string) error
 }
 
-// Poly each slice is a different poly voice.
+// Poly each slice is a different voice.
 type Poly []Voice
 
-// Voice is a single voice (monophony) from start to finish.
+// Voice is a monophony from start to finish.
 type Voice map[int]Train
 
-// Train fundamental and partials.
+// Train fundamental and partials (as wagons.)
 type Train map[int]Wagon
 
 // Wagon holds a Sine a panning value.
@@ -64,7 +64,7 @@ type Wagon struct {
 
 // Sine holds necessary data to construct a sine wave.
 // It also has the method Signal() that creates the
-// audio signal as a float slice.
+// audio signal as mlsic.Audio (float64 slice.)
 type Sine struct {
 	// Frequency of the sine wave.
 	Frequency float64
@@ -79,7 +79,7 @@ type Sine struct {
 
 // Signal creates a float64 audio signal out of the Sine and returns the length in samples.
 // Note: signal always returns a signal to zero, or a full sine cycle.
-// Inevitably it will return a sightly shorter signal than the original durations
+// Inevitably it will return a sightly shorter signal than the original duration
 // intended. This must be dealt with by the consumer.
 func (s Sine) Signal() (int, Audio) {
 	s.sampleFactor = s.Frequency / SampleRate
@@ -121,19 +121,24 @@ func (s Sine) Signal() (int, Audio) {
 	return len(samples[:lastIndex]), samples[:lastIndex]
 }
 
+// DurationInSamples returns the assigned duration of Sine in samples.
+func (s Sine) DurationInSamples() int {
+	return SignalLengthMultiplier * int(s.Duration.Abs().Milliseconds())
+}
+
 // Scale a number between minAllowed and maxAllowed to min, max.
-func Scale(unscaledNum, minAllowed, maxAllowed, min, max float64) float64 {
-	return (maxAllowed-minAllowed)*(unscaledNum-min)/(max-min) + minAllowed
+func Scale(unscaledNum, minAllowed, maxAllowed, minActual, maxActual float64) float64 {
+	return (maxAllowed-minAllowed)*(unscaledNum-minActual)/(maxActual-minActual) + minAllowed
 }
 
 const (
-	// speakersMinPanning in the Panning() system the minimum accepted value is 0.
+	// SpeakersMinPanning in the Panning() system the minimum accepted value is 0.
 	// This represents the furthest "left" speaker.
-	speakersMinPanning = 0
+	SpeakersMinPanning = 0.
 
-	// speakersMaxPanning in the Panning() system the maximum accepted value is 1.
+	// SpeakersMaxPanning in the Panning() system the maximum accepted value is 1.
 	// This represents the furthest "right" speaker.
-	speakersMaxPanning = 1
+	SpeakersMaxPanning = 1.
 )
 
 // Panning returns the ratio to multiple the signal for a particular set of speaker numbers.

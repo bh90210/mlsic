@@ -20,3 +20,11 @@ func TestSignal(t *testing.T) {
 	assert.Equal(t, 101, i)
 	assert.Equal(t, expected, signal)
 }
+
+func TestScale(t *testing.T) {
+	result := Scale(10., 0., 1., 0., 100.)
+	assert.Equal(t, 0.1, result)
+
+	result = Scale(.5, 0., 100., 0., 1.)
+	assert.Equal(t, 50., result)
+}

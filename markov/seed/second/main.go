@@ -37,7 +37,7 @@ func main() {
 	}
 
 	// Seed composition generation.
-	poly := seedTrain()
+	poly := polySeed()
 
 	// Add the data to the model.
 	m.AddPoly(poly)
@@ -77,8 +77,8 @@ func main() {
 	}
 }
 
-// seedTrain .
-func seedTrain() mlsic.Poly {
+// polySeed .
+func polySeed() mlsic.Poly {
 	log.Info().Msg("melody train")
 
 	var poly mlsic.Poly
@@ -127,11 +127,39 @@ func seedTrain() mlsic.Poly {
 		}
 	}
 
-	h := &primeHarmonics{}
-	seed.PartialsGeneration(h, voice1)
+	prev2 := prev
+
+	for i := 0.02; i < 1.; i += 0.02 {
+		prev += int(voice1[prev][0].Sine.Duration.Abs().Milliseconds()) *
+			mlsic.SignalLengthMultiplier
+
+		voice1[prev] = make(mlsic.Train)
+		voice1[prev][0] = mlsic.Wagon{
+			Sine: mlsic.Sine{
+				Frequency: 600,
+				Amplitude: i / 4,
+				Duration:  time.Duration(15 * time.Millisecond),
+			},
+			Panning: i,
+		}
+	}
+
+	for i := 0.98; i > 0.02; i -= 0.02 {
+		prev += int(voice1[prev][0].Sine.Duration.Abs().Milliseconds()) *
+			mlsic.SignalLengthMultiplier
+
+		voice1[prev] = make(mlsic.Train)
+		voice1[prev][0] = mlsic.Wagon{
+			Sine: mlsic.Sine{
+				Frequency: 700,
+				Amplitude: i / 4,
+				Duration:  time.Duration(30 * time.Millisecond),
+			},
+			Panning: i,
+		}
+	}
 
 	voice2 := make(mlsic.Voice, 0)
-	prev2 := prev
 
 	// 400.
 	voice2[prev2] = make(mlsic.Train)
@@ -174,43 +202,12 @@ func seedTrain() mlsic.Poly {
 		}
 	}
 
+	h := &primeHarmonics{}
+	seed.PartialsGeneration(h, voice1)
 	seed.PartialsGeneration(h, voice2)
 
-	for i := 0.02; i < 1.; i += 0.02 {
-		prev += int(voice1[prev][0].Sine.Duration.Abs().Milliseconds()) *
-			mlsic.SignalLengthMultiplier
-
-		voice1[prev] = make(mlsic.Train)
-		voice1[prev][0] = mlsic.Wagon{
-			Sine: mlsic.Sine{
-				Frequency: 600,
-				Amplitude: i / 4,
-				Duration:  time.Duration(15 * time.Millisecond),
-			},
-			Panning: i,
-		}
-	}
-
-	for i := 0.98; i > 0.02; i -= 0.02 {
-		prev += int(voice1[prev][0].Sine.Duration.Abs().Milliseconds()) *
-			mlsic.SignalLengthMultiplier
-
-		voice1[prev] = make(mlsic.Train)
-		voice1[prev][0] = mlsic.Wagon{
-			Sine: mlsic.Sine{
-				Frequency: 700,
-				Amplitude: i / 4,
-				Duration:  time.Duration(30 * time.Millisecond),
-			},
-			Panning: i,
-		}
-	}
-
-	seed.PartialsGeneration(h, voice1)
-
 	// Append voices to poly slice.
-	// poly = append(poly, voice1, voice2)
-	poly = append(poly, voice1)
+	poly = append(poly, voice1, voice2)
 
 	return poly
 }
