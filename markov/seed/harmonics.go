@@ -1,77 +1,82 @@
 package seed
 
 import (
-	"math/rand/v2"
-	"time"
+	"math/big"
 
 	"github.com/bh90210/mlsic"
 	"github.com/bh90210/mlsic/markov"
 )
 
-// PartialsGeneration .
-func PartialsGeneration(h mlsic.Harmonics, voice mlsic.Voice) {
-	partials := h.Partials()
+// var _ mlsic.Harmonics = (*PrimeHarmonics)(nil)
 
-	partialsTrains := make(mlsic.Voice)
-
-	for trainIndex, train := range voice {
-		wagon := train[0]
-		partialsTrains[trainIndex] = make(mlsic.Train)
-
-		for _, p := range partials {
-			freq := wagon.Sine.Frequency * float64(p.Number)
-			if freq > mlsic.MaxFrequency {
-				continue
-			}
-
-			var partialIndex int
-			for {
-				// Double TODO: this needs to be less than the maximum duration of the fundamental.
-				// TODO: this number determines the time in milliseconds the particular partial will start.
-				// This is fundamental starting time + offset for the partial.
-				// Number 500 meaning a partial can start up to half a second after the fundamental
-				// is arbitrary. Fix it!
-				partialIndex = rand.IntN(markov.MaximumPartialStartingPoint)
-				if partialIndex != 0 {
-					if _, ok := partialsTrains[trainIndex][partialIndex]; ok {
-						continue
-					}
-
-					break
-				}
-			}
-
-			l := mlsic.SignalLengthMultiplier * int(wagon.Sine.Duration.Abs().Milliseconds())
-			l -= partialIndex
-			l /= mlsic.SignalLengthMultiplier
-
-			if l == 0 {
-				l = markov.MinimumPartialDuration
-			}
-
-			partialsTrains[trainIndex][partialIndex] = mlsic.Wagon{
-				Sine: mlsic.Sine{
-					Frequency: freq,
-					Amplitude: wagon.Sine.Amplitude * p.AmplitudeFactor,
-					Duration:  time.Duration(l * int(time.Millisecond)),
-				},
-				// TODO: Panning of the partials is similar to fundamental. Make it dynamic.
-				Panning: voice[trainIndex][0].Panning,
-			}
-		}
-	}
-
-	for trainIndex, train := range partialsTrains {
-		for wagonIndex, wagon := range train {
-			voice[trainIndex][wagonIndex] = wagon
-		}
-	}
+// PrimeHarmonics .
+type PrimeHarmonics struct {
+	partials []mlsic.Partial
 }
 
-func dynamicHarmonic(sine mlsic.Sine, partial int) float64 {
-	f := mlsic.Scale((sine.Amplitude*sine.Frequency)*(float64(sine.Duration.Abs().Milliseconds())/float64(partial)), 0.0, 1.0, 0.0, 15000000.0)
-	a := sine.Amplitude * f
+// Partials .
+func (p *PrimeHarmonics) Partials(poly []markov.Voice) {
+	if len(p.partials) > 0 {
+		return
+	}
 
-	// return Scale(a, h.Partials1[partial], h.partials2[partial], 0.0, 1.0)
-	return a
+	for i := 2; i < 1000; i++ {
+		v := 0.
+		if big.NewInt(int64(i)).ProbablyPrime(0) {
+			v = 0.0051 * float64(i)
+		}
+
+		p.partials = append(p.partials, mlsic.Partial{
+			Number:          i,
+			AmplitudeFactor: v,
+		})
+	}
+
 }
+
+// Fundamental is always the first Wagon of a Train at index position zero.
+const Fundamental = 0
+
+// // PartialsGeneration .
+// func PartialsGeneration(voice markov.Voice) {
+// 	partialsTrains := make(markov.Voice)
+
+// 	for toneIndex, tone := range voice {
+// 		// At this point each tone has only one partial, the fundamental.
+// 		fundamental := tone[Fundamental]
+// 		partialsTrains[toneIndex] = make(markov.Tone)
+
+// 		// Init prime harmonics with the fundamental.
+// 		fundamentalHarmonics := PrimeHarmonics{
+// 			Fundamental: &fundamental,
+// 		}
+
+// 		// Generate the partials.
+// 		partials := fundamentalHarmonics.Partials()
+
+// 		// Range through them and append them to the tone.
+// 		for _, partial := range partials {
+// 			freq := fundamental.Sine.Frequency * float64(partial.Number)
+// 			if freq > mlsic.MaxFrequency {
+// 				continue
+// 			}
+
+// 			partialsTrains[toneIndex][partial.StartInSamples()] = markov.Partial{
+// 				Sine: markov.Sine{
+// 					Frequency: freq,
+// 					Amplitude: fundamental.Sine.Amplitude * partial.AmplitudeFactor,
+// 					Duration:  partial.Duration,
+// 				},
+// 				// TODO: Panning of the partials is similar to fundamental. Make it dynamic.
+// 				Panning:        voice[toneIndex][Fundamental].Panning,
+// 				NotFundamental: &partial,
+// 			}
+// 		}
+// 	}
+
+// 	for toneIndex, tone := range partialsTrains {
+// 		for partialIndex, partial := range tone {
+// 			voice[toneIndex][partialIndex] = partial
+// 		}
+// 	}
+// }

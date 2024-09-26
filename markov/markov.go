@@ -3,11 +3,13 @@ package markov
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
@@ -17,8 +19,8 @@ import (
 	"github.com/mb-14/gomarkov"
 )
 
-// Models .
-type Models struct {
+// Model .
+type Model struct {
 	Freq *gomarkov.Chain
 	Amp  *gomarkov.Chain
 	Dur  *gomarkov.Chain
@@ -27,7 +29,7 @@ type Models struct {
 }
 
 // Add .
-func (m *Models) Add(train []mlsic.Sine) {
+func (m *Model) Add(train []Sine) {
 	m.nilCheck()
 
 	frequency := []string{}
@@ -46,13 +48,14 @@ func (m *Models) Add(train []mlsic.Sine) {
 }
 
 type indexHelper struct {
-	voice      int
-	trainIndex int
-	wagonIndex int
+	voice        int
+	voiceIndex   int
+	toneIndex    int
+	partialIndex int
 }
 
 // AddPoly .
-func (m *Models) AddPoly(poly mlsic.Poly) {
+func (m *Model) AddPoly(poly []Voice) {
 	m.nilCheck(true)
 
 	// We will collect all indices there is a sine in a map[int].
@@ -62,12 +65,20 @@ func (m *Models) AddPoly(poly mlsic.Poly) {
 	// For example: map[trainIndex+wagonIndex][voice][wagonIndex].
 	indices := make(map[int][]indexHelper)
 	for voiceNo, voice := range poly {
-		for trainIndex, train := range voice {
-			for wagonIndex := range train {
-				indices[trainIndex+wagonIndex] = append(indices[trainIndex+wagonIndex], indexHelper{
-					voice:      voiceNo,
-					trainIndex: trainIndex,
-					wagonIndex: wagonIndex,
+		for toneIndex, tone := range voice {
+			indices[toneIndex] = append(indices[toneIndex], indexHelper{
+				voice:        voiceNo,
+				voiceIndex:   toneIndex,
+				toneIndex:    toneIndex,
+				partialIndex: -1,
+			})
+
+			for partialIndex, partial := range tone.Partials {
+				indices[toneIndex+partial.StartInSamples()] = append(indices[toneIndex+partial.StartInSamples()], indexHelper{
+					voice:        voiceNo,
+					voiceIndex:   toneIndex,
+					toneIndex:    toneIndex,
+					partialIndex: partialIndex,
 				})
 			}
 		}
@@ -84,21 +95,36 @@ func (m *Models) AddPoly(poly mlsic.Poly) {
 	for _, i := range OrderedIndices {
 		indexHelpers := indices[i]
 		for _, h := range indexHelpers {
-			wagon := poly[h.voice][h.trainIndex][h.wagonIndex]
+			tone := poly[h.voice][h.voiceIndex]
+			t := []string{}
 
-			w := []string{}
-			w = append(w, fmt.Sprintf("%f", wagon.Sine.Frequency))
-			w = append(w, fmt.Sprintf("%f", wagon.Sine.Amplitude))
-			w = append(w, fmt.Sprintf("%v", wagon.Sine.Duration.Milliseconds()))
-			w = append(w, fmt.Sprintf("%f", wagon.Panning))
+			// This means we are dealing with fundamental.
+			switch h.partialIndex {
+			case -1:
+				if h.partialIndex == -1 {
+					t = append(t, fmt.Sprintf("%f", tone.Fundamental.Frequency))
+					t = append(t, fmt.Sprintf("%f", tone.Fundamental.Amplitude))
+					t = append(t, fmt.Sprintf("%v", tone.Fundamental.DurationInSamples()))
+					t = append(t, fmt.Sprintf("%f", tone.Panning))
+					m.Poly.Add([]string{strings.Join(t, " ")})
+				}
 
-			m.Poly.Add([]string{strings.Join(w, " ")})
+			default:
+				partial := tone.Partials[h.partialIndex]
+
+				t = append(t, fmt.Sprintf("%f", tone.Fundamental.Frequency*float64(partial.Number)))
+				t = append(t, fmt.Sprintf("%f", tone.Fundamental.Amplitude*partial.AmplitudeFactor))
+				t = append(t, fmt.Sprintf("%v", partial.DurationInSamples()))
+				t = append(t, fmt.Sprintf("%f", tone.Panning))
+			}
+
+			m.Poly.Add([]string{strings.Join(t, " ")})
 		}
 	}
 }
 
 // Export .
-func (m *Models) Export(path string) error {
+func (m *Model) Export(path string) error {
 	if m.Poly != nil {
 		poly, err := m.Poly.MarshalJSON()
 		if err != nil {
@@ -151,7 +177,7 @@ func (m *Models) Export(path string) error {
 	return nil
 }
 
-func (m *Models) nilCheck(poly ...bool) {
+func (m *Model) nilCheck(poly ...bool) {
 	if poly != nil {
 		if m.Poly == nil {
 			m.Poly = gomarkov.NewChain(2)
@@ -174,7 +200,7 @@ func (m *Models) nilCheck(poly ...bool) {
 }
 
 // Generate .
-func Generate(filepath string, train []mlsic.Sine, h mlsic.Harmonics, ngen int) {
+func Generate(filepath string, train []Sine, h mlsic.Harmonics, ngen int) {
 	// Left channel.
 	leftM := make(map[int][]float64, len(train))
 	// Right channel.
@@ -190,7 +216,7 @@ func Generate(filepath string, train []mlsic.Sine, h mlsic.Harmonics, ngen int) 
 	for i, v := range train {
 		wg.Add(1)
 
-		go func(i int, v mlsic.Sine) {
+		go func(i int, v Sine) {
 			defer wg.Done()
 
 			osc := generator.NewOsc(generator.WaveSine, v.Frequency, 44100)
@@ -274,7 +300,7 @@ const MinimumPartialDuration = 10
 var ErrNotEnoughSpeakers = errors.New("allowed number of speakers is 1+")
 
 // Deconstruct .
-func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
+func Deconstruct(poly []Voice, noOfSpeakers int) ([]mlsic.Audio, error) {
 	if noOfSpeakers < 1 {
 		return nil, ErrNotEnoughSpeakers
 	}
@@ -282,50 +308,56 @@ func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 	speakers := make([]mlsic.Audio, noOfSpeakers)
 
 	for _, voice := range poly {
-		voiceIndex, voiceSignals := voiceHelper(voice, noOfSpeakers)
+		voiceIndex := voice.Ordered()
+		voiceSignals := voice.Signals(noOfSpeakers)
 
-		var previousSignalOffset int
+		// We need to set the last phase of a sine
+		// as the starting position of the next one.
+		var previousFundamentalPhase float64
+		// Range through the voice's tones.
 		for _, i := range voiceIndex {
-			trainSignal := make([][]float64, noOfSpeakers)
+			// Set the tone to work this for this loop.
+			tone := voice[i]
+			// Generate fundamental's signal.
+			phase, length, signal := tone.Signal(previousFundamentalPhase)
 
-			var fundamentalSignalOffset int
-			for wagonIndex, wagon := range voice[i] {
-				sineSignalLength, sineSignal := wagon.Sine.Signal()
-				// log.Fatal().Int("l", sineSignalLength).Int("ll", len(sineSignal)).Floats64("s", sineSignal[sineSignalLength-2:]).Msg("yo")
-				// If we are dealing with the fundamental take note where it ends.
-				if wagonIndex == 0 {
-					fundamentalSignalOffset = wagon.Sine.DurationInSamples() - sineSignalLength
+			// Set starting phase for next sine in voice.
+			previousFundamentalPhase = phase
+
+			// Create temporary slices for tone,
+			toneSignal := make([][]float64, noOfSpeakers)
+			// We the appropriate length for the duration of the fundamental.
+			for o := range toneSignal {
+				toneSignal[o] = make([]float64, length)
+			}
+
+			// Append fundamental's signal to the temporary buffer.
+			for o, v := range signal {
+				for speakerNumber := 0; speakerNumber < noOfSpeakers; speakerNumber++ {
+					// Panning.
+					panning := mlsic.Panning(noOfSpeakers, speakerNumber, tone.Panning)
+
+					toneSignal[speakerNumber][o] += v * tone.Fundamental.Amplitude * panning
 				}
+			}
 
-				// Append empty values to signal if signal is shorter than needed.
-				for o := 0; o < noOfSpeakers; o++ {
-					if len(trainSignal[o]) < sineSignalLength+wagonIndex {
-						trainSignal[o] = append(trainSignal[o], make([]float64, sineSignalLength+wagonIndex-len(trainSignal[o]))...)
-					}
-				}
-
-				for o, v := range sineSignal {
+			for _, partial := range tone.Partials {
+				_, _, partialSignal := tone.PartialSignal(partial)
+				for o, v := range partialSignal {
 					for speakerNumber := 0; speakerNumber < noOfSpeakers; speakerNumber++ {
 						// Panning.
-						panning := mlsic.Panning(noOfSpeakers, speakerNumber, wagon.Panning)
+						panning := mlsic.Panning(noOfSpeakers, speakerNumber, tone.Panning)
 
-						trainSignal[speakerNumber][wagonIndex+o] += v * wagon.Sine.Amplitude * panning
+						toneSignal[speakerNumber][o+partial.StartInSamples()] += v * (tone.Fundamental.Amplitude * partial.AmplitudeFactor) * panning
 					}
 				}
 			}
 
-			for speakerNo, signal := range trainSignal {
+			for speakerNo, signal := range toneSignal {
 				for o, v := range signal {
-					// We will start adding from the fundamental end.
-					// This means that the harmonic trail of the fundamental
-					// will blend += with the start of the next train.
-					voiceSignals[speakerNo][i+o-previousSignalOffset] += v
+					voiceSignals[speakerNo][i+o] = v
 				}
 			}
-
-			// Each train has a small offset (fundamentalSignalOffset.) We need
-			// to account += for the total offset of all fundamentals so far.
-			previousSignalOffset += fundamentalSignalOffset
 		}
 
 		for speakerNo, signal := range voiceSignals {
@@ -344,31 +376,109 @@ func Deconstruct(poly mlsic.Poly, noOfSpeakers int) ([]mlsic.Audio, error) {
 	return speakers, nil
 }
 
-func voiceHelper(voice mlsic.Voice, noOfSpeakers int) ([]int, [][]float64) {
+// Voice is a single monophony from start to finish.
+// It contains Trains, representing a fundamental
+// (first Wagon of the Train) and it's partials.
+type Voice map[int]Tone
+
+// Ordered .
+func (v Voice) Ordered() (voiceIndex []int) {
+	voiceIndex = ordered(v)
+	return
+}
+
+// Signals .
+func (v Voice) Signals(noOfSpeakers int) (signals [][]float64) {
 	// Determine the total trains length.
 	var length int
-	for k := range voice {
+	for k := range v {
 		if length < k {
 			length = k
 		}
 	}
 
-	// Add the duration of voice's last train.
-	length += voice[length][0].Sine.DurationInSamples()
-
-	// Order trains map.
-	voiceIndex := make([]int, 0)
-	for k := range voice {
-		voiceIndex = append(voiceIndex, k)
-	}
-
-	sort.Ints(voiceIndex)
+	// Add the duration of voice's last tone.
+	length += v[length].Fundamental.DurationInSamples()
 
 	// Create signals slices of the appropriate length for each speaker.
-	voiceSignals := make([][]float64, noOfSpeakers)
-	for i := range voiceSignals {
-		voiceSignals[i] = make([]float64, length+MaximumPartialStartingPoint+MinimumPartialDuration)
+	signals = make([][]float64, noOfSpeakers)
+	for i := range signals {
+		signals[i] = make([]float64, length+44100) // Add one extra second of silence at the end.
 	}
 
-	return voiceIndex, voiceSignals
+	return
+}
+
+// Tone .
+type Tone struct { // map[int]Partial
+	Fundamental Sine
+	Partials    []mlsic.Partial
+	// Panning information.
+	Panning float64
+}
+
+// Signal creates a float64 audio signal out of the Sine and returns the length in samples.
+// Note: signal always returns a signal to zero, or a full sine cycle.
+// Inevitably it will return a sightly shorter signal than the original duration
+// intended. This must be dealt with by the consumer.
+func (t Tone) Signal(phase ...float64) (float64, int, mlsic.Audio) {
+	if phase != nil {
+		t.Fundamental.phase = phase[0]
+	}
+
+	return signal(t.Fundamental.Frequency, t.Fundamental.phase, t.Fundamental.DurationInSamples())
+}
+
+// PartialSignal .
+func (t Tone) PartialSignal(partial mlsic.Partial) (float64, int, mlsic.Audio) {
+	frequency := t.Fundamental.Frequency * float64(partial.Number)
+	if frequency > mlsic.MaxFrequency {
+		return 0, 0, nil
+	}
+
+	// TODO: should partials start at zero phase or follow fundamental's
+	// at the particular point they start?
+	return signal(frequency, .0, partial.DurationInSamples())
+}
+
+// Sine holds necessary data to construct a sine wave.
+// It also has the method Signal() that creates the
+// audio signal as mlsic.Audio (float64 slice.)
+type Sine struct {
+	// Frequency of the sine wave.
+	Frequency float64
+	// Amplitude (velocity) of the sine wave.
+	Amplitude float64
+	// Duration of the sine wave in milliseconds.
+	Duration time.Duration
+
+	sampleFactor float64
+	phase        float64
+}
+
+// DurationInSamples returns the assigned duration of Sine in samples.
+func (s Sine) DurationInSamples() int {
+	return mlsic.SignalLengthMultiplier * int(s.Duration.Abs().Milliseconds())
+}
+
+func signal(frequency float64, phase float64, durationInSample int) (float64, int, mlsic.Audio) {
+	sampleFactor := frequency / mlsic.SampleRate
+
+	samples := make(mlsic.Audio, durationInSample)
+	for i := range samples {
+		samples[i] = math.Sin(phase * 2.0 * math.Pi)
+		_, phase = math.Modf(phase + sampleFactor)
+	}
+
+	return phase, len(samples), samples
+}
+
+func ordered[K int, V Tone](m map[K]V) (index []int) {
+	for i := range m {
+		index = append(index, int(i))
+	}
+
+	sort.Ints(index)
+
+	return
 }

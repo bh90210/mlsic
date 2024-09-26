@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math/big"
 	"os"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 
 	"github.com/bh90210/mlsic"
 	"github.com/bh90210/mlsic/markov"
-	"github.com/bh90210/mlsic/markov/seed"
 	"github.com/bh90210/mlsic/render"
 	"github.com/mb-14/gomarkov"
 )
@@ -32,7 +30,7 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	m := markov.Models{
+	m := markov.Model{
 		Poly: gomarkov.NewChain(2),
 	}
 
@@ -78,75 +76,77 @@ func main() {
 }
 
 // polySeed .
-func polySeed() mlsic.Poly {
+func polySeed() []markov.Voice {
 	log.Info().Msg("melody train")
 
-	var poly mlsic.Poly
+	var poly []markov.Voice
 
-	voice1 := make(mlsic.Voice, 0)
-	var prev int
+	voice1 := make(markov.Voice)
+	voice2 := make(markov.Voice)
+	voice3 := make(markov.Voice)
+	voice4 := make(markov.Voice)
 
-	// 400.
-	for i := 0.; i < 1.; i += 0.01 {
-		prev += voice1[prev][0].Sine.DurationInSamples()
+	var toneIndex int
+	toneIndex = upDown(400., .5, toneIndex, voice1)
 
-		voice1[prev] = make(mlsic.Train)
-		voice1[prev][0] = mlsic.Wagon{
-			Sine: mlsic.Sine{
-				Frequency: 440.,
-				Amplitude: i / 4,
-				Duration:  time.Duration(30 * time.Millisecond),
-			},
-			Panning: i,
-		}
-	}
+	upDown(500., .6, toneIndex, voice1)
+	toneIndex = upDown(300., .4, toneIndex, voice2)
 
-	for i := 1.; i > 0.; i -= 0.01 {
-		prev += voice1[prev][0].Sine.DurationInSamples()
+	upDown(600., .7, toneIndex, voice1)
+	upDown(200., .3, toneIndex, voice2)
+	toneIndex = upDown(400., .5, toneIndex, voice3)
 
-		voice1[prev] = make(mlsic.Train)
-		voice1[prev][0] = mlsic.Wagon{
-			Sine: mlsic.Sine{
-				Frequency: 440.,
-				Amplitude: i / 4,
-				Duration:  time.Duration(30 * time.Millisecond),
-			},
-			Panning: i,
-		}
-	}
+	upDown(650., .65, toneIndex, voice1)
+	upDown(150., .2, toneIndex, voice2)
+	upDown(350., .35, toneIndex, voice3)
+	toneIndex = upDown(450., .4, toneIndex, voice4)
 
-	h := &primeHarmonics{}
-	seed.PartialsGeneration(h, voice1)
+	upDown(700., .65, toneIndex, voice1)
+	upDown(100., .2, toneIndex, voice2)
+	upDown(300., .35, toneIndex, voice3)
+	toneIndex = upDown(500., .4, toneIndex, voice4)
+
+	upDown(690., .65, toneIndex, voice1)
+	upDown(110., .2, toneIndex, voice2)
+	upDown(350., .35, toneIndex, voice3)
+	toneIndex = upDown(550., .4, toneIndex, voice4)
 
 	// Append voices to poly slice.
-	poly = append(poly, voice1)
+	poly = append(poly, voice1, voice2, voice3, voice4)
+
+	// Generate the partials.
+	// h := seed.PrimeHarmonics{}
+	// h.Partials(poly)
 
 	return poly
 }
 
-var _ mlsic.Harmonics = (*primeHarmonics)(nil)
+func upDown(freq float64, pan float64, tone int, voice markov.Voice) int {
+	for i := 0.; i < 1.; i += 0.1 {
+		tone += voice[tone].Fundamental.DurationInSamples()
 
-type primeHarmonics struct {
-	partials []mlsic.Partial
-}
-
-// Prime .
-func (p *primeHarmonics) Partials() []mlsic.Partial {
-	if len(p.partials) > 0 {
-		return p.partials
-	}
-
-	for i := 2; i < 1000; i++ {
-		v := 0.
-		if big.NewInt(int64(i)).ProbablyPrime(0) {
-			v = 0.0051 * float64(i)
+		voice[tone] = markov.Tone{
+			Fundamental: markov.Sine{
+				Frequency: freq,
+				Amplitude: i / 4,
+				Duration:  time.Duration(5 * time.Millisecond),
+			},
+			Panning: pan,
 		}
-
-		p.partials = append(p.partials, mlsic.Partial{
-			Number:          i,
-			AmplitudeFactor: v,
-		})
 	}
 
-	return p.partials
+	for i := 1.; i > 0.; i -= 0.1 {
+		tone += voice[tone].Fundamental.DurationInSamples()
+
+		voice[tone] = markov.Tone{
+			Fundamental: markov.Sine{
+				Frequency: freq,
+				Amplitude: i / 4,
+				Duration:  time.Duration(5 * time.Millisecond),
+			},
+			Panning: pan,
+		}
+	}
+
+	return tone
 }

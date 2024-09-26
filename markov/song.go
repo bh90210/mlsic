@@ -90,7 +90,7 @@ func (s *Song) NGen() {
 		log.Info().Msg("creating chains")
 
 		// Prepare a Markov Train so we can load the previously created model.
-		t := Models{
+		t := Model{
 			Freq: gomarkov.NewChain(1),
 			Amp:  gomarkov.NewChain(1),
 			Dur:  gomarkov.NewChain(1),
@@ -178,7 +178,7 @@ func (s *Song) NGen() {
 		log.Info().Msg("creating sines train")
 
 		// Create sines train.
-		var train []mlsic.Sine
+		var train []Sine
 
 		for i, freqs := range generationFreqs {
 			var outOfBoundsAmp bool
@@ -205,7 +205,7 @@ func (s *Song) NGen() {
 					dur = generationDurs[i][o]
 				}
 
-				train = append(train, mlsic.Sine{
+				train = append(train, Sine{
 					Frequency: freq,
 					Amplitude: amp,
 					Duration:  time.Duration(dur) * time.Millisecond,

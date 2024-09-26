@@ -2,7 +2,6 @@
 package mlsic
 
 import (
-	"math"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -13,9 +12,6 @@ const SampleRate = 44100
 
 // MaxFrequency allowed.
 const MaxFrequency = 18000
-
-// SignalLengthMultiplier this is a bit lame, fix it! TODO:
-const SignalLengthMultiplier = 44
 
 const (
 	// OneSpeaker 1 speaker.
@@ -61,90 +57,9 @@ type Renderer interface {
 	Render(source []Audio, name string) error
 }
 
-// Poly each slice is a different voice.
-type Poly []Voice
-
-// Voice is a monophony from start to finish.
-type Voice map[int]Train
-
-// Train fundamental and partials (as wagons.)
-type Train map[int]Wagon
-
-// Wagon holds a Sine a panning value.
-type Wagon struct {
-	// Sine information.
-	Sine Sine
-	// Panning information.
-	Panning float64
-}
-
-// Sine holds necessary data to construct a sine wave.
-// It also has the method Signal() that creates the
-// audio signal as mlsic.Audio (float64 slice.)
-type Sine struct {
-	// Frequency of the sine wave.
-	Frequency float64
-	// Amplitude (velocity) of the sine wave.
-	Amplitude float64
-	// Duration of the sine wave.
-	Duration time.Duration
-
-	sampleFactor float64
-	phase        float64
-}
-
-// Signal creates a float64 audio signal out of the Sine and returns the length in samples.
-// Note: signal always returns a signal to zero, or a full sine cycle.
-// Inevitably it will return a sightly shorter signal than the original duration
-// intended. This must be dealt with by the consumer.
-func (s Sine) Signal() (int, Audio) {
-	s.sampleFactor = s.Frequency / SampleRate
-
-	samples := make(Audio, s.DurationInSamples())
-
-	for i := range samples {
-		samples[i] = math.Sin(s.phase * 2.0 * math.Pi)
-		_, s.phase = math.Modf(s.phase + s.sampleFactor)
-	}
-
-	var lastIndex int
-	for i := len(samples) - 1; i > 0; i-- {
-		// If current sample is equal or smaller than 0.
-		if samples[i] <= 0 {
-			// Check the sample on the left if it is bellow 0.
-			if samples[i-1] < 0 {
-				// We are checking if we are at the last index.
-				// This is to catch the rare moment where the last value
-				// of the samples slice is the one where we need to clip.
-				if i == len(samples)-1 && samples[i] > -0.001 {
-					// If we are then return.
-					lastIndex = i + 1
-
-					break
-				}
-
-				if i < len(samples)-1 {
-					if samples[i+1] >= 0 {
-						lastIndex = i + 1
-
-						break
-					}
-				}
-			}
-		}
-	}
-
-	return len(samples[:lastIndex]), samples[:lastIndex]
-}
-
-// DurationInSamples returns the assigned duration of Sine in samples.
-func (s Sine) DurationInSamples() int {
-	return SignalLengthMultiplier * int(s.Duration.Abs().Milliseconds())
-}
-
-// Scale a number between minAllowed and maxAllowed to min, max.
-func Scale(unscaledNum, minAllowed, maxAllowed, minActual, maxActual float64) float64 {
-	return (maxAllowed-minAllowed)*(unscaledNum-minActual)/(maxActual-minActual) + minAllowed
+// Scale a number.
+func Scale(unscaledValue, scaledMin, scaledMax, unscaledMin, unscaledMax float64) float64 {
+	return (scaledMax-scaledMin)*(unscaledValue-unscaledMin)/(unscaledMax-unscaledMin) + scaledMin
 }
 
 const (
@@ -205,34 +120,44 @@ func Panning(noOfSpeakers, speakerNumber int, originalPanning float64) (panning 
 			}
 
 			if originalPanning < speakerMid {
-				panning = 1 - Scale(speakerMid-originalPanning, 0., 1., 0., speakerWidth)
+				unscaledNumber := speakerMid - originalPanning
+				panning = 1 - Scale(unscaledNumber, SpeakersMinPanning, SpeakersMaxPanning, 0., speakerWidth)
 			}
 
 			if originalPanning > speakerMid {
-				panning = 1 - Scale(originalPanning-speakerMid, 0., 1., 0., speakerWidth)
+				unscaledNumber := originalPanning - speakerMid
+				panning = 1 - Scale(unscaledNumber, SpeakersMinPanning, SpeakersMaxPanning, 0., speakerWidth)
 			}
 
 		// If panning value is above this speaker's range.
 		// This implies that there is a speaker on the right.
 		case originalPanning > speakerMax &&
 			originalPanning < (speakerMid+speakerWidth):
-			panning = Scale(speakerMid+speakerWidth-originalPanning, 0., 1., 0., speakerWidth)
+
+			unscaledNumber := speakerMid + speakerWidth - originalPanning
+			panning = Scale(unscaledNumber, SpeakersMinPanning, SpeakersMaxPanning, 0., speakerWidth)
 
 		// If panning value is bellow this speaker's range.
 		// This implies that there is a speaker on the left.
 		case originalPanning < speakerMin &&
 			originalPanning > (speakerMid-speakerWidth):
-			panning = 1 - Scale(speakerMid-originalPanning, 0., 1., 0., speakerWidth)
+
+			unscaledNumber := speakerMid - originalPanning
+			panning = 1 - Scale(unscaledNumber, SpeakersMinPanning, SpeakersMaxPanning, 0., speakerWidth)
 
 		// First speaker panning in case the original panning is above the middle of last speaker.
 		case speakerNumber == 0 &&
 			originalPanning > speakerMid+(speakerWidth*float64(noOfSpeakers-1)):
-			panning = Scale(originalPanning-(speakerMid+(speakerWidth*float64(noOfSpeakers-1))), 0., 1., 0., speakerWidth)
+
+			unscaledNumber := originalPanning - (speakerMid + (speakerWidth * float64(noOfSpeakers-1)))
+			panning = Scale(unscaledNumber, SpeakersMinPanning, SpeakersMaxPanning, 0., speakerWidth)
 
 		// Last speaker panning in case the original value was bellow first speaker's middle.
 		case speakerNumber+1 == noOfSpeakers &&
 			originalPanning < speakerWidth/2:
-			panning = Scale((speakerWidth/2)-originalPanning, 0., 1., 0., speakerWidth)
+
+			unscaledNumber := (speakerWidth / 2) - originalPanning
+			panning = Scale(unscaledNumber, SpeakersMinPanning, SpeakersMaxPanning, 0., speakerWidth)
 
 		}
 	}
@@ -259,4 +184,17 @@ type Partial struct {
 	Start time.Duration
 	// Duration of the partial in milliseconds.
 	Duration time.Duration
+}
+
+// SignalLengthMultiplier this is a bit lame, fix it! TODO:
+const SignalLengthMultiplier = 44
+
+// DurationInSamples .
+func (p Partial) DurationInSamples() int {
+	return int(SignalLengthMultiplier * p.Duration.Abs().Milliseconds())
+}
+
+// StartInSamples .
+func (p Partial) StartInSamples() int {
+	return int(SignalLengthMultiplier * p.Start.Abs().Milliseconds())
 }
