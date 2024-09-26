@@ -11,6 +11,7 @@ import (
 
 	"github.com/bh90210/mlsic"
 	"github.com/bh90210/mlsic/markov"
+	"github.com/bh90210/mlsic/markov/seed"
 	"github.com/bh90210/mlsic/render"
 	"github.com/mb-14/gomarkov"
 )
@@ -115,8 +116,8 @@ func polySeed() []markov.Voice {
 	poly = append(poly, voice1, voice2, voice3, voice4)
 
 	// Generate the partials.
-	// h := seed.PrimeHarmonics{}
-	// h.Partials(poly)
+	h := seed.PrimeHarmonics{}
+	poly = h.Partials(poly)
 
 	return poly
 }

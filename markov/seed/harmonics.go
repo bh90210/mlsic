@@ -15,23 +15,40 @@ type PrimeHarmonics struct {
 }
 
 // Partials .
-func (p *PrimeHarmonics) Partials(poly []markov.Voice) {
-	if len(p.partials) > 0 {
-		return
-	}
-
-	for i := 2; i < 1000; i++ {
-		v := 0.
-		if big.NewInt(int64(i)).ProbablyPrime(0) {
-			v = 0.0051 * float64(i)
+func (p *PrimeHarmonics) Partials(poly []markov.Voice) []markov.Voice {
+	// At this point partials only contain their number
+	// and the amplitude factor.
+	if p.partials == nil {
+		for i := 2; i < 230; i++ {
+			if big.NewInt(int64(i)).ProbablyPrime(0) {
+				p.partials = append(p.partials, mlsic.Partial{
+					Number:          i,
+					AmplitudeFactor: 1. / float64(i),
+				})
+			}
 		}
-
-		p.partials = append(p.partials, mlsic.Partial{
-			Number:          i,
-			AmplitudeFactor: v,
-		})
 	}
 
+	for i, voice := range poly {
+		for toneIndex, tone := range voice {
+			for _, partial := range p.partials {
+				if partial.Number*int(tone.Fundamental.Frequency) > mlsic.MaxFrequency {
+					continue
+				}
+
+				tone.Partials = append(tone.Partials, mlsic.Partial{
+					Number:          partial.Number,
+					AmplitudeFactor: partial.AmplitudeFactor,
+					Start:           .0,
+					Duration:        tone.Fundamental.Duration,
+				})
+			}
+
+			poly[i][toneIndex] = tone
+		}
+	}
+
+	return poly
 }
 
 // Fundamental is always the first Wagon of a Train at index position zero.
