@@ -113,7 +113,8 @@ func polySeed() []markov.Voice {
 	toneIndex = upDown(550., .4, toneIndex, voice4)
 
 	// Append voices to poly slice.
-	poly = append(poly, voice1, voice2, voice3, voice4)
+	// poly = append(poly, voice1, voice2, voice3, voice4)
+	poly = append(poly, voice1)
 
 	// Generate the partials.
 	h := seed.PrimeHarmonics{}
@@ -129,8 +130,8 @@ func upDown(freq float64, pan float64, tone int, voice markov.Voice) int {
 		voice[tone] = markov.Tone{
 			Fundamental: markov.Sine{
 				Frequency: freq,
-				Amplitude: i / 4,
-				Duration:  time.Duration(5 * time.Millisecond),
+				Amplitude: i / 8,
+				Duration:  time.Duration(100 * time.Millisecond),
 			},
 			Panning: pan,
 		}
@@ -142,7 +143,7 @@ func upDown(freq float64, pan float64, tone int, voice markov.Voice) int {
 		voice[tone] = markov.Tone{
 			Fundamental: markov.Sine{
 				Frequency: freq,
-				Amplitude: i / 4,
+				Amplitude: i / 8,
 				Duration:  time.Duration(5 * time.Millisecond),
 			},
 			Panning: pan,

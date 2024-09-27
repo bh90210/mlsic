@@ -8,4 +8,5 @@ theme = 'hugo-book'
   [permalinks.section]
     posts = '/live/'
     docs = '/blog/'
-
+[markup.goldmark.renderer]
+  unsafe= true

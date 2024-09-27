@@ -200,16 +200,15 @@ The final step is to save the generated audio files and export the new models th
 
 ## Seed
 
-<audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/experiment_1_seed.wav" controls preload></audio>
-
-
+<audio src="/mlsic/blog/experiment_1_seed.wav" controls preload></audio>
 
 ## Generator
 
 ## Result
 
-<audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/experiment_1_ngen_24_left_channel_ngen_16 both_channels_ngen_40_right_channel_excerpt.wav" controls preload></audio>
-<audio src="https://github.com/bh90210/mlsic/raw/trunk/docs/public/experiment_1_ngen_25_left_channel_ngen_39_right_channel.wav" controls preload></audio>
+<audio src="/mlsic/blog/experiment_1_ngen_24_left_channel_ngen_16 both_channels_ngen_40_right_channel_excerpt.wav" controls preload></audio>
+
+<audio src="/mlsic/blog/experiment_1_ngen_25_left_channel_ngen_39_right_channel.wav" controls preload></audio>
 
 #### Limitations
 
