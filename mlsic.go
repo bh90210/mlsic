@@ -13,6 +13,9 @@ const SampleRate = 44100
 // MaxFrequency allowed.
 const MaxFrequency = 18000
 
+// MaxPartial allowed. 230 * 80 = 18.400 kHz which is above the MaxFrequency.
+const MaxPartial = 230
+
 const (
 	// OneSpeaker 1 speaker.
 	OneSpeaker = 1

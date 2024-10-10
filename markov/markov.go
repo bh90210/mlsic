@@ -409,6 +409,17 @@ func (v Voice) Signals(noOfSpeakers int) (signals [][]float64) {
 	return
 }
 
+// LengthInSamples .
+func (v Voice) LengthInSamples() (length int) {
+	for k, v := range v {
+		if k+v.Fundamental.DurationInSamples() > length {
+			length = k + v.Fundamental.DurationInSamples()
+		}
+	}
+
+	return
+}
+
 // Tone .
 type Tone struct { // map[int]Partial
 	Fundamental Sine

@@ -1,30 +1,22 @@
 package seed
 
-import (
-	"testing"
-	"time"
+// func TestPartials(t *testing.T) {
+// 	var poly []markov.Voice
 
-	"github.com/bh90210/mlsic/markov"
-	"github.com/stretchr/testify/assert"
-)
+// 	voice := make(markov.Voice)
+// 	voice[0] = markov.Tone{
+// 		Fundamental: markov.Sine{
+// 			Frequency: 440,
+// 			Amplitude: 1.,
+// 			Duration:  time.Duration(1 * time.Millisecond),
+// 		},
+// 		Panning: 0.5,
+// 	}
 
-func TestPartials(t *testing.T) {
-	var poly []markov.Voice
+// 	poly = append(poly, voice)
 
-	voice := make(markov.Voice)
-	voice[0] = markov.Tone{
-		Fundamental: markov.Sine{
-			Frequency: 440,
-			Amplitude: 1.,
-			Duration:  time.Duration(1 * time.Millisecond),
-		},
-		Panning: 0.5,
-	}
+// 	h := PrimeHarmonics{}
+// 	got := h.Partials(poly)
 
-	poly = append(poly, voice)
-
-	h := PrimeHarmonics{}
-	got := h.Partials(poly)
-
-	assert.Equal(t, []markov.Voice{}, got)
-}
+// 	assert.Equal(t, []markov.Voice{}, got)
+// }

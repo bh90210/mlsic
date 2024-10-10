@@ -200,7 +200,8 @@ The final step is to save the generated audio files and export the new models th
 
 ## Seed
 
-<audio src="/mlsic/blog/experiment_1_seed.wav" controls preload></audio>
+<!-- <audio src="/mlsic/blog/experiment_1_seed.wav" controls preload></audio> -->
+<audio src="https://raw.githubusercontent.com/bh90210/mlsic/trunk/docs/content/docs/markov/experiment_1_seed.wav" controls preload></audio>
 
 ## Generator
 
