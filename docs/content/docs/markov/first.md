@@ -1,4 +1,5 @@
 ---
+slug: markov/v0.1.0
 title: v0.1.0
 weight: 1
 ---

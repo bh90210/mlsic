@@ -1,4 +1,5 @@
 ---
+slug: markov
 weight: 10
 type: docs
 ---

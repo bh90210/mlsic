@@ -4,9 +4,8 @@ title = 'Mlsic blog'
 theme = 'hugo-book'
 [permalinks]
   [permalinks.page]
-    docs = '/blog/:slug/'
+    docs = '/:slug/'
   [permalinks.section]
-    posts = '/live/'
-    docs = '/blog/'
+    docs = '/:slug/'
 [markup.goldmark.renderer]
   unsafe= true
