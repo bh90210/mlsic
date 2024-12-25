@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -24,14 +23,11 @@ type Model struct {
 	Freq *gomarkov.Chain
 	Amp  *gomarkov.Chain
 	Dur  *gomarkov.Chain
-
-	Poly *gomarkov.Chain
+	Pan  *gomarkov.Chain
 }
 
 // Add .
 func (m *Model) Add(train []Sine) {
-	m.nilCheck()
-
 	frequency := []string{}
 	amplitude := []string{}
 	duration := []string{}
@@ -54,10 +50,11 @@ type indexHelper struct {
 	partialIndex int
 }
 
-// AddPoly .
-func (m *Model) AddPoly(poly []Voice) {
-	m.nilCheck(true)
+// FundamentalIndex .
+const FundamentalIndex = -1
 
+// Add2 .
+func (m *Model) Add2(poly []Voice) {
 	// We will collect all indices there is a sine in a map[int].
 	// the slice if ints []int are the voices this particular index
 	// has a corresponding sine. This is because multiple voices may
@@ -70,7 +67,7 @@ func (m *Model) AddPoly(poly []Voice) {
 				voice:        voiceNo,
 				voiceIndex:   toneIndex,
 				toneIndex:    toneIndex,
-				partialIndex: -1,
+				partialIndex: FundamentalIndex,
 			})
 
 			for partialIndex, partial := range tone.Partials {
@@ -85,60 +82,48 @@ func (m *Model) AddPoly(poly []Voice) {
 	}
 
 	// Order indices.
-	OrderedIndices := make([]int, 0)
+	orderedIndices := make([]int, 0)
 	for k := range indices {
-		OrderedIndices = append(OrderedIndices, k)
+		orderedIndices = append(orderedIndices, k)
 	}
 
-	sort.Ints(OrderedIndices)
+	sort.Ints(orderedIndices)
 
-	for _, i := range OrderedIndices {
+	var freq, amp, dur, pan []string
+	for _, i := range orderedIndices {
 		indexHelpers := indices[i]
 		for _, h := range indexHelpers {
 			tone := poly[h.voice][h.voiceIndex]
-			t := []string{}
 
-			// This means we are dealing with fundamental.
 			switch h.partialIndex {
-			case -1:
-				if h.partialIndex == -1 {
-					t = append(t, fmt.Sprintf("%f", tone.Fundamental.Frequency))
-					t = append(t, fmt.Sprintf("%f", tone.Fundamental.Amplitude))
-					t = append(t, fmt.Sprintf("%v", tone.Fundamental.DurationInSamples()))
-					t = append(t, fmt.Sprintf("%f", tone.Panning))
-					m.Poly.Add([]string{strings.Join(t, " ")})
-				}
+			// This means we are dealing with fundamental.
+			case FundamentalIndex:
+				freq = append(freq, fmt.Sprintf("%f", tone.Fundamental.Frequency))
+				amp = append(amp, fmt.Sprintf("%f", tone.Fundamental.Amplitude))
+				dur = append(dur, fmt.Sprintf("%v", tone.Fundamental.DurationInSamples()))
+				pan = append(pan, fmt.Sprintf("%f", tone.Panning))
 
 			default:
 				partial := tone.Partials[h.partialIndex]
 
-				t = append(t, fmt.Sprintf("%f", tone.Fundamental.Frequency*float64(partial.Number)))
-				t = append(t, fmt.Sprintf("%f", tone.Fundamental.Amplitude*partial.AmplitudeFactor))
-				t = append(t, fmt.Sprintf("%v", partial.DurationInSamples()))
-				t = append(t, fmt.Sprintf("%f", tone.Panning))
+				freq = append(freq, fmt.Sprintf("%f", tone.Fundamental.Frequency*float64(partial.Number)))
+				amp = append(amp, fmt.Sprintf("%f", tone.Fundamental.Amplitude*partial.AmplitudeFactor))
+				dur = append(dur, fmt.Sprintf("%v", partial.DurationInSamples()))
+				pan = append(pan, fmt.Sprintf("%f", tone.Panning))
 			}
-
-			m.Poly.Add([]string{strings.Join(t, " ")})
 		}
 	}
+
+	m.Freq.Add(freq)
+	m.Amp.Add(amp)
+	m.Dur.Add(dur)
+	m.Pan.Add(pan)
+
+	log.Info().Str("freq", freq[0]).Str("amp", amp[0]).Str("dur", dur[0]).Str("pan", pan[0]).Msg("added")
 }
 
 // Export .
 func (m *Model) Export(path string) error {
-	if m.Poly != nil {
-		poly, err := m.Poly.MarshalJSON()
-		if err != nil {
-			return err
-		}
-
-		err = os.WriteFile(filepath.Join(path, "poly.json"), poly, 0644)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
 	if m.Freq != nil {
 		freq, err := m.Freq.MarshalJSON()
 		if err != nil {
@@ -174,29 +159,22 @@ func (m *Model) Export(path string) error {
 			return err
 		}
 	}
-	return nil
-}
 
-func (m *Model) nilCheck(poly ...bool) {
-	if poly != nil {
-		if m.Poly == nil {
-			m.Poly = gomarkov.NewChain(2)
+	if m.Pan != nil {
+		poly, err := m.Pan.MarshalJSON()
+		if err != nil {
+			return err
 		}
 
-		return
+		err = os.WriteFile(filepath.Join(path, "pan.json"), poly, 0644)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 
-	if m.Freq == nil {
-		m.Freq = gomarkov.NewChain(1)
-	}
-
-	if m.Amp == nil {
-		m.Amp = gomarkov.NewChain(1)
-	}
-
-	if m.Dur == nil {
-		m.Dur = gomarkov.NewChain(1)
-	}
+	return nil
 }
 
 // Generate .
@@ -304,8 +282,7 @@ func Deconstruct(poly []Voice, noOfSpeakers int) ([]mlsic.Audio, error) {
 	if noOfSpeakers < 1 {
 		return nil, ErrNotEnoughSpeakers
 	}
-
-	speakers := make([]mlsic.Audio, noOfSpeakers)
+	signals := make([]mlsic.Audio, noOfSpeakers)
 
 	for _, voice := range poly {
 		voiceIndex := voice.Ordered()
@@ -361,24 +338,24 @@ func Deconstruct(poly []Voice, noOfSpeakers int) ([]mlsic.Audio, error) {
 		}
 
 		for speakerNo, signal := range voiceSignals {
-			if len(speakers[speakerNo]) < len(signal) {
-				speakers[speakerNo] = append(speakers[speakerNo], make([]float64, len(signal)-len(speakers[speakerNo]))...)
+			if len(signals[speakerNo]) < len(signal) {
+				signals[speakerNo] = append(signals[speakerNo], make([]float64, len(signal)-len(signals[speakerNo]))...)
 			}
 		}
 
 		for speakerNo, signal := range voiceSignals {
 			for i, v := range signal {
-				speakers[speakerNo][i] += v
+				signals[speakerNo][i] += v
 			}
 		}
 	}
 
-	return speakers, nil
+	return signals, nil
 }
 
 // Voice is a single monophony from start to finish.
-// It contains Trains, representing a fundamental
-// (first Wagon of the Train) and it's partials.
+// It contains Tones, representing a fundamental
+// (first index of the Tone) and it's partials.
 type Voice map[int]Tone
 
 // Ordered .
@@ -421,7 +398,7 @@ func (v Voice) LengthInSamples() (length int) {
 }
 
 // Tone .
-type Tone struct { // map[int]Partial
+type Tone struct {
 	Fundamental Sine
 	Partials    []mlsic.Partial
 	// Panning information.

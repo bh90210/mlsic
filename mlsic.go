@@ -194,10 +194,10 @@ const SignalLengthMultiplier = 44
 
 // DurationInSamples .
 func (p Partial) DurationInSamples() int {
-	return int(SignalLengthMultiplier * p.Duration.Abs().Milliseconds())
+	return SignalLengthMultiplier * int(p.Duration.Abs().Milliseconds())
 }
 
 // StartInSamples .
 func (p Partial) StartInSamples() int {
-	return int(SignalLengthMultiplier * p.Start.Abs().Milliseconds())
+	return SignalLengthMultiplier * int(p.Start.Abs().Milliseconds())
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/gordonklaus/portaudio"
 )
 
-const bufferSize int = 512
+const bufferSize int = 8192
 
 var _ mlsic.Renderer = (*PortAudio)(nil)
 
@@ -26,14 +26,14 @@ type PortAudio struct {
 
 // NewPortAudio will try to initialize with a portaudio.DefaultOutputDevice()
 // with the default buffer size set at 512, latency 10ms and 2 channels.
-func NewPortAudio(opts ...PortAudioOption) (pa *PortAudio, err error) {
-	err = portaudio.Initialize()
+func NewPortAudio(opts ...PortAudioOption) (*PortAudio, error) {
+	err := portaudio.Initialize()
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	// Set default values to the named return value pa.
-	pa = &PortAudio{
+	pa := &PortAudio{
 		BufferSize: bufferSize,
 		Latency:    10,
 		Channels:   2,
@@ -44,20 +44,19 @@ func NewPortAudio(opts ...PortAudioOption) (pa *PortAudio, err error) {
 	}
 
 	if pa.OutputDevice == nil {
-		var defaultOutput *portaudio.DeviceInfo
-		defaultOutput, err = portaudio.DefaultOutputDevice()
+		defaultOutput, err := portaudio.DefaultOutputDevice()
 		if err != nil {
-			return
+			return nil, err
 		}
 
 		pa.OutputDevice = defaultOutput
 	}
 
-	return
+	return pa, nil
 }
 
 // Render will render for as many channels as len(pcmBuffer).
-func (p *PortAudio) Render(a []mlsic.Audio, _ string) error {
+func (p *PortAudio) Render(audioChannels []mlsic.Audio, _ string) error {
 	defer portaudio.Terminate()
 
 	parameters := portaudio.StreamParameters{
@@ -76,9 +75,9 @@ func (p *PortAudio) Render(a []mlsic.Audio, _ string) error {
 	}
 
 	var buffers [][]float32
-	for _, v := range a {
-		data32 := make([]float32, len(v))
-		f64ToF32Copy(data32, v)
+	for _, audioChannel := range audioChannels {
+		data32 := make([]float32, len(audioChannel))
+		f64ToF32Copy(data32, audioChannel)
 		buffers = append(buffers, data32)
 	}
 

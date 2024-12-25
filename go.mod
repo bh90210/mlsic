@@ -5,7 +5,7 @@ go 1.22
 toolchain go1.22.0
 
 require (
-	github.com/go-audio/aiff v1.0.0
+	cpl.li/go/markov v1.0.0
 	github.com/go-audio/audio v1.0.0
 	github.com/go-audio/generator v0.0.0-20191129013639-fe5438877d8c
 	github.com/go-audio/transforms v0.0.0-20180121090939-51830ccc35a5
@@ -23,7 +23,5 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/tools v0.5.1-0.20230111220935-a7f7db3f17fc // indirect
-	golang.org/x/tools/cmd/cover v0.1.0-deprecated // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
