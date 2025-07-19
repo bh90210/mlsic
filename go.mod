@@ -5,7 +5,6 @@ go 1.22
 toolchain go1.22.0
 
 require (
-	cpl.li/go/markov v1.0.0
 	github.com/go-audio/audio v1.0.0
 	github.com/go-audio/generator v0.0.0-20191129013639-fe5438877d8c
 	github.com/go-audio/transforms v0.0.0-20180121090939-51830ccc35a5

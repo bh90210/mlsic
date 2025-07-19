@@ -46,14 +46,14 @@ const (
 type Audio []float64
 
 // Reader .
-type Reader interface {
-	Read(Audio) (int, error)
-}
+// type Reader interface {
+// 	Read(Audio) (int, error)
+// }
 
-// Writer .
-type Writer interface {
-	Write(Audio) (int, error)
-}
+// // Writer .
+// type Writer interface {
+// 	Write(Audio) (int, error)
+// }
 
 // Renderer .
 type Renderer interface {

@@ -1,5 +1,3 @@
-cpl.li/go/markov v1.0.0 h1:egPmFvrV67SQ3tj637UppFxQNIa2KM0rFaA10QinD8k=
-cpl.li/go/markov v1.0.0/go.mod h1:Z39P2wmro2JTko2/aR38x6wGUc+4l6yyasvP7KRkr9s=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

@@ -1,23 +1,70 @@
 package main
 
 import (
+	"flag"
+	"os"
 	"time"
 
-	"github.com/bh90210/mlsic/markov"
-	"github.com/bh90210/mlsic/markov/seed"
+	"github.com/bh90210/mlsic"
+	"github.com/bh90210/mlsic/render"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
+func main() {
+	debug := flag.Bool("debug", false, "sets log level to debug")
+	// filesPath := flag.String("files", "", "sets the directory audio files will be saved")
+
+	flag.Parse()
+
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if *debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	// Seed composition generation.
+	poly := polySeed()
+
+	// Generate the audio signal for each speakers (mlsic.TwoSpeakers.)
+	speakersSignal, err := mlsic.Signal(poly, mlsic.TwoSpeakers)
+	if err != nil {
+		log.Fatal().Err(err).Msg("deconstructing trains")
+	}
+
+	var music []mlsic.Audio
+	music = append(music, speakersSignal...)
+
+	// Render audio to Port Audio.
+	portAudio, _ := render.NewPortAudio(render.WithChannels(mlsic.TwoSpeakers))
+
+	if err := portAudio.Render(music, "seed"); err != nil {
+		log.Fatal().Err(err).Msg("rendering port audio")
+	}
+
+	// fmt.Println(*filesPath)
+	// Render audio as .wav files.
+	// wav := render.Wav{
+	// 	Filepath: *filesPath,
+	// }
+
+	// if err := wav.Render(music, "seed"); err != nil {
+	// 	log.Fatal().Err(err).Msg("rendering wav files")
+	// }
+}
+
 // polySeed .
-func polySeed() []markov.Voice {
+func polySeed() []mlsic.Voice {
 	log.Info().Msg("melody train")
 
-	var poly []markov.Voice
+	var poly []mlsic.Voice
 
-	voice1 := make(markov.Voice)
-	voice2 := make(markov.Voice)
-	voice3 := make(markov.Voice)
-	voice4 := make(markov.Voice)
+	voice1 := make(mlsic.Voice)
+	voice2 := make(mlsic.Voice)
+	voice3 := make(mlsic.Voice)
+	voice4 := make(mlsic.Voice)
 
 	// Move 1.
 	var toneIndex int
@@ -42,10 +89,10 @@ func polySeed() []markov.Voice {
 	move4(voice1.LengthInSamples(), voice1, voice2, voice3, voice4)
 
 	// Generate the partials.
-	voice1 = seed.Partials(voice1, seed.PrimeMove1)
-	voice2 = seed.Partials(voice2, seed.PrimeMove1)
-	voice3 = seed.Partials(voice3, seed.PrimeMove1)
-	voice4 = seed.Partials(voice4, seed.PrimeMove1)
+	voice1 = mlsic.Partials(voice1, mlsic.PrimeMove1)
+	voice2 = mlsic.Partials(voice2, mlsic.PrimeMove1)
+	voice3 = mlsic.Partials(voice3, mlsic.PrimeMove1)
+	voice4 = mlsic.Partials(voice4, mlsic.PrimeMove1)
 
 	// Append voices to poly slice.
 	poly = append(poly, voice1, voice2, voice3, voice4)
@@ -53,9 +100,9 @@ func polySeed() []markov.Voice {
 	return poly
 }
 
-func injectStart(index int, voice markov.Voice) int {
-	voice[index] = markov.Tone{
-		Fundamental: markov.Sine{
+func injectStart(index int, voice mlsic.Voice) int {
+	voice[index] = mlsic.Tone{
+		Fundamental: mlsic.Sine{
 			Frequency: 180.000000,
 			Amplitude: 0.100000,
 			Duration:  time.Duration(50) * time.Millisecond,
@@ -68,12 +115,12 @@ func injectStart(index int, voice markov.Voice) int {
 	return index
 }
 
-func upDown(freq float64, pan float64, toneIndex int, voice markov.Voice, factor float64, duration int) int {
+func upDown(freq float64, pan float64, toneIndex int, voice mlsic.Voice, factor float64, duration int) int {
 	for i := 0.; i < 1.; i += factor {
 		toneIndex += voice[toneIndex].Fundamental.DurationInSamples()
 
-		voice[toneIndex] = markov.Tone{
-			Fundamental: markov.Sine{
+		voice[toneIndex] = mlsic.Tone{
+			Fundamental: mlsic.Sine{
 				Frequency: freq,
 				Amplitude: 0.4 * i,
 				Duration:  time.Duration(duration) * time.Millisecond,
@@ -85,8 +132,8 @@ func upDown(freq float64, pan float64, toneIndex int, voice markov.Voice, factor
 	for i := 1.; i > 0.; i -= 0.1 {
 		toneIndex += voice[toneIndex].Fundamental.DurationInSamples()
 
-		voice[toneIndex] = markov.Tone{
-			Fundamental: markov.Sine{
+		voice[toneIndex] = mlsic.Tone{
+			Fundamental: mlsic.Sine{
 				Frequency: freq,
 				Amplitude: 0.4 * i,
 				Duration:  time.Duration(5 * time.Millisecond),
@@ -98,7 +145,7 @@ func upDown(freq float64, pan float64, toneIndex int, voice markov.Voice, factor
 	return toneIndex
 }
 
-func move3(toneIndex int, voices ...markov.Voice) []markov.Voice {
+func move3(toneIndex int, voices ...mlsic.Voice) []mlsic.Voice {
 	var freq float64 = 440.
 	var pan float64 = .0
 	var duration int = 5
@@ -225,12 +272,12 @@ func move3(toneIndex int, voices ...markov.Voice) []markov.Voice {
 	return voices
 }
 
-func move3UpDown(freq float64, pan float64, tone int, voice markov.Voice, factor1, factor2 float64, duration int) int {
+func move3UpDown(freq float64, pan float64, tone int, voice mlsic.Voice, factor1, factor2 float64, duration int) int {
 	for i := 0.; i < 1.; i += factor1 {
 		tone += voice[tone].Fundamental.DurationInSamples()
 
-		voice[tone] = markov.Tone{
-			Fundamental: markov.Sine{
+		voice[tone] = mlsic.Tone{
+			Fundamental: mlsic.Sine{
 				Frequency: freq,
 				Amplitude: i / 8,
 				Duration:  time.Duration(duration) * time.Millisecond,
@@ -242,8 +289,8 @@ func move3UpDown(freq float64, pan float64, tone int, voice markov.Voice, factor
 	for i := 1.; i > 0.; i -= factor2 {
 		tone += voice[tone].Fundamental.DurationInSamples()
 
-		voice[tone] = markov.Tone{
-			Fundamental: markov.Sine{
+		voice[tone] = mlsic.Tone{
+			Fundamental: mlsic.Sine{
 				Frequency: freq,
 				Amplitude: i / 8,
 				Duration:  time.Duration(5 * time.Millisecond),
@@ -255,12 +302,12 @@ func move3UpDown(freq float64, pan float64, tone int, voice markov.Voice, factor
 	return tone
 }
 
-func move4(toneIndex int, voices ...markov.Voice) []markov.Voice {
+func move4(toneIndex int, voices ...mlsic.Voice) []mlsic.Voice {
 	for _, voice := range voices {
 		toneIndex += voice[toneIndex].Fundamental.DurationInSamples()
 
-		voice[toneIndex] = markov.Tone{
-			Fundamental: markov.Sine{
+		voice[toneIndex] = mlsic.Tone{
+			Fundamental: mlsic.Sine{
 				Frequency: 1000,
 				Amplitude: .2 / 8,
 				Duration:  time.Duration(1000) * time.Millisecond,
@@ -289,8 +336,8 @@ func move4(toneIndex int, voices ...markov.Voice) []markov.Voice {
 
 		toneIndex += voice[toneIndex].Fundamental.DurationInSamples()
 
-		voice[toneIndex] = markov.Tone{
-			Fundamental: markov.Sine{
+		voice[toneIndex] = mlsic.Tone{
+			Fundamental: mlsic.Sine{
 				Frequency: freq,
 				Amplitude: .2 / 8,
 				Duration:  time.Duration(1000) * time.Millisecond,
@@ -323,8 +370,8 @@ func move4(toneIndex int, voices ...markov.Voice) []markov.Voice {
 
 		toneIndex += voice[toneIndex].Fundamental.DurationInSamples()
 
-		voice[toneIndex] = markov.Tone{
-			Fundamental: markov.Sine{
+		voice[toneIndex] = mlsic.Tone{
+			Fundamental: mlsic.Sine{
 				Frequency: freq,
 				Amplitude: .2 / 8,
 				Duration:  time.Duration(1000) * time.Millisecond,
@@ -357,8 +404,8 @@ func move4(toneIndex int, voices ...markov.Voice) []markov.Voice {
 
 		toneIndex += voice[toneIndex].Fundamental.DurationInSamples()
 
-		voice[toneIndex] = markov.Tone{
-			Fundamental: markov.Sine{
+		voice[toneIndex] = mlsic.Tone{
+			Fundamental: mlsic.Sine{
 				Frequency: freq,
 				Amplitude: .2 / 8,
 				Duration:  time.Duration(1000) * time.Millisecond,
